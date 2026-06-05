@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import heroImage from '../assets/hero-children.png';
 
-function HeroSection() {
+function HeroSection({ onNavigate }) {
   const sectionRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -42,29 +42,28 @@ function HeroSection() {
                 zero-latency personalization to prevent cognitive fatigue.
               </p>
             </div>
-
-            {/* CTA Buttons */}
+                {/* CTA Buttons - Updated to use the onNavigate prop */}
             <div className="flex flex-wrap items-center gap-4">
-              <a
-                href="#educators"
-                id="hero-cta-educators"
-                className="group inline-flex items-center gap-2 px-7 py-3.5 bg-brand-orange text-white font-semibold text-body-md rounded-full hover:bg-brand-orange-hover hover:text-brand-heading shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-0.5"
-              >
-                For Educators
-                <span className="transition-transform duration-200 group-hover:translate-x-1">
-                  &gt;
-                </span>
-              </a>
-              <a
-                href="#learners"
-                id="hero-cta-learners"
-                className="group inline-flex items-center justify-center gap-2 px-7 py-3.5 text-on-surface font-medium text-body-md border border-outline-variant rounded-full bg-transparent hover:border-primary-container hover:bg-surface-container-lowest transition-all duration-300 hover:-translate-y-0.5"
-              >
-                For Learners
-                <span className="transition-transform duration-200 group-hover:translate-x-1">
-                  →
-                </span>
-              </a>
+                <button
+                    onClick={() => onNavigate('teacher')}
+                    id="hero-cta-educators"
+                    className="group inline-flex items-center gap-2 px-7 py-3.5 bg-brand-orange text-white font-semibold text-body-md rounded-full hover:bg-brand-orange-hover hover:text-brand-heading shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-0.5"
+                >
+                    For Educators
+                    <span className="transition-transform duration-200 group-hover:translate-x-1">
+                    </span>
+                </button>
+
+                <button
+                    onClick={() => onNavigate('student-game')}
+                    id="hero-cta-learners"
+                    className="group inline-flex items-center justify-center gap-2 px-7 py-3.5 text-on-surface font-medium text-body-md border border-outline-variant rounded-full bg-transparent hover:border-primary-container hover:bg-surface-container-lowest transition-all duration-300 hover:-translate-y-0.5"
+                >
+                    For Learners
+                    <span className="transition-transform duration-200 group-hover:translate-x-1">
+                    →
+                    </span>
+                </button>
             </div>
           </div>
 
