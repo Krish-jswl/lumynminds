@@ -56,6 +56,7 @@ router.post('/upload', upload.single('curriculum'), async (req, res) => {
       messages: [{ role: "user", content: prompt }],
       model: "llama-3.3-70b-versatile",
       temperature: 0.2,
+      max_tokens: 8000,
       response_format: { type: "json_object" }, // Force strict JSON output
     });
 

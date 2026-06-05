@@ -60,7 +60,7 @@ export default function FileUpload({ onUploadSuccess }) {
       >
         <input 
           type="file" 
-          accept="application/pdf"
+            accept="application/pdf, text/plain"
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           onChange={handleFileChange}
           disabled={isUploading}
