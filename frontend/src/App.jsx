@@ -10,6 +10,7 @@ import Assessment from './components/Assessment';
 import EducatorAuth from './components/EducatorAuth';
 import StudentAuth from './components/StudentAuth';
 import EducatorDashboard from './components/EducatorDashboard';
+import PastMaterials from './components/PastMaterials';
 
 function App() {
   const [view, setView] = useState('landing');
@@ -82,8 +83,12 @@ function App() {
 
         {view === 'teacher' && (
           <div className="pt-24">
-            <EducatorDashboard />
+            <EducatorDashboard onNavigate={handleNavigate} />
           </div>
+        )}
+
+        {view === 'past-materials' && (
+          <PastMaterials />
         )}
 
         {view === 'student-game' && (

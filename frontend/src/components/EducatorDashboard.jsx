@@ -54,7 +54,7 @@ const sliderGroups = [
   },
 ];
 
-function EducatorDashboard() {
+function EducatorDashboard({ onNavigate }) {
   /* ── State ── */
   const [uploadStatus, setUploadStatus] = useState('idle'); // 'idle' | 'uploading' | 'success'
   const [showGraph, setShowGraph] = useState(false);
@@ -270,7 +270,10 @@ function EducatorDashboard() {
                 </p>
               </div>
             </div>
-            <button className="px-10 py-3 border-2 border-primary-container text-primary font-bold rounded-xl hover:bg-primary-container hover:text-white transition-all flex items-center gap-2">
+            <button
+              onClick={() => onNavigate?.('past-materials')}
+              className="px-10 py-3 border-2 border-primary-container text-primary font-bold rounded-xl hover:bg-primary-container hover:text-white transition-all flex items-center gap-2"
+            >
               Assess Past Study Material
               <ArrowRight className="w-5 h-5" strokeWidth={2} />
             </button>
