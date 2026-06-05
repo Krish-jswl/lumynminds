@@ -12,4 +12,4 @@ const learningBlockSchema = new mongoose.Schema({
   misconceptions: [{ type: String }]
 }, { timestamps: true });
 
-module.exports = mongoose.model('LearningBlock', learningBlockSchema);
+module.exports = mongoose.model('KnowledgeGraph', learningBlockSchema);

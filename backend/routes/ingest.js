@@ -2,9 +2,9 @@
 const express = require('express');
 const router = express.Router();
 const upload = require('../middleware/upload');
-const pdfParse = require('pdf-parse'); 
+const pdfParse = require('pdf-parse-new');
 const Groq = require('groq-sdk');
-const LearningBlock = require('../models/LearningBlock');
+const KnowledgeGraph = require('../models/KnowledgeGraph');
 
 // Initialize Groq
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
@@ -16,18 +16,25 @@ router.post('/upload', upload.single('curriculum'), async (req, res) => {
     }
 
     console.log("📄 File Received. Extracting text...");
-    let rawText = "";
 
+    let rawText = "";
     try {
-      const parseFunc = typeof pdfParse === 'function' ? pdfParse : pdfParse.default;
-      const pdfData = await parseFunc(req.file.buffer);
+      const pdfData = await pdfParse(req.file.buffer);
       rawText = pdfData.text;
     } catch (parseError) {
-      console.log("⚠️ Not a valid PDF format. Falling back to raw text buffer...");
-      rawText = req.file.buffer.toString('utf-8');
+      console.error("❌ pdf-parse failed:", parseError.message);
+      return res.status(400).json({ error: 'Failed to parse PDF. The file may be corrupt or not a valid PDF.' });
     }
 
-    const textToAnalyze = rawText.substring(0, 8000);
+    if (!rawText || rawText.trim().length === 0) {
+      return res.status(400).json({ error: 'PDF parsed but contained no readable text.' });
+    }
+
+    // Clean extracted text: collapse excess whitespace and newlines
+    const cleanedText = rawText.replace(/\n{2,}/g, '\n').replace(/[ \t]{2,}/g, ' ').trim();
+
+    // Truncate to 3000 chars to prevent context window overload
+    const textToAnalyze = cleanedText.substring(0, 15000);
     console.log(`🧠 Text ready (Length: ${textToAnalyze.length}). Sending to Groq...`);
     
     const prompt = `
@@ -56,19 +63,20 @@ router.post('/upload', upload.single('curriculum'), async (req, res) => {
       messages: [{ role: "user", content: prompt }],
       model: "llama-3.3-70b-versatile",
       temperature: 0.2,
-      response_format: { type: "json_object" }, // Force strict JSON output
+      max_tokens: 4000,
+      response_format: { type: "json_object" },
     });
 
     const aiResponse = completion.choices[0].message.content;
     const parsedData = JSON.parse(aiResponse);
-    const blocks = parsedData.blocks; // Extract the array from the object
+    const blocks = parsedData.blocks;
 
     blocks.forEach((block, index) => {
       block.concept_id = `concept_${Date.now()}_${index}`;
     });
     
     console.log(`💾 Saving ${blocks.length} blocks to database...`);
-    await LearningBlock.insertMany(blocks);
+    await KnowledgeGraph.insertMany(blocks);
 
     res.json({ 
       message: 'Knowledge Graph generated and saved successfully!', 
