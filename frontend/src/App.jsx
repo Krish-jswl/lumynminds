@@ -9,6 +9,7 @@ import Dashboard from './components/Dashboard';
 import Assessment from './components/Assessment';
 import EducatorAuth from './components/EducatorAuth';
 import StudentAuth from './components/StudentAuth';
+import EducatorDashboard from './components/EducatorDashboard';
 
 function App() {
   const [view, setView] = useState('landing');
@@ -80,10 +81,8 @@ function App() {
         )}
 
         {view === 'teacher' && (
-          <div className="pt-32 pb-20 px-6 max-w-5xl mx-auto">
-            {/* Show teacher's name if logged in */}
-            <h2 className="text-2xl font-bold mb-4">Welcome, Educator {currentUser?.name?.split(' ')[0]}</h2>
-            {!graphData ? <FileUpload onUploadSuccess={handleUploadSuccess} /> : <Dashboard graphData={graphData} />}
+          <div className="pt-24">
+            <EducatorDashboard />
           </div>
         )}
 
