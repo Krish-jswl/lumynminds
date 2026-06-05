@@ -1,3 +1,19 @@
+<<<<<<< HEAD
+// Tracked by Git
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import LandingPage from './pages/LandingPage';
+import TeacherDashboard from './pages/TeacherDashboard';
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
+      </Routes>
+    </BrowserRouter>
+=======
 import React, { useState } from 'react';
 import TopNavBar from './components/TopNavBar';
 import HeroSection from './components/HeroSection';
@@ -57,6 +73,7 @@ function App() {
       
       <Footer />
     </div>
+>>>>>>> d5360f57858d20fe2d707706751f0538370b14b9
   );
 }
 
