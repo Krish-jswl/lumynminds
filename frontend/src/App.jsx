@@ -1,72 +1,72 @@
 import React, { useState } from 'react';
+// His imports
+import TopNavBar from './components/TopNavBar';
+import HeroSection from './components/HeroSection';
+import TrustBanner from './components/TrustBanner';
+import FeatureSections from './components/FeatureSections';
+import Footer from './components/Footer';
+
+// Your imports
 import FileUpload from './components/FileUpload';
 import Dashboard from './components/Dashboard';
 import Assessment from './components/Assessment';
-import { BrainCircuit } from 'lucide-react';
 
 function App() {
+  // Your state logic
+  const [view, setView] = useState('landing'); // 'landing', 'teacher', 'student-game', 'student-lesson'
   const [graphData, setGraphData] = useState(null);
-  const [view, setView] = useState('teacher'); // 'teacher', 'student-game', 'student-lesson'
   const [studentProfile, setStudentProfile] = useState(null);
 
-  const handleUploadSuccess = (data) => setGraphData(data);
+  const handleUploadSuccess = (data) => {
+    setGraphData(data);
+    setView('teacher');
+  };
 
   const handleAssessmentComplete = (metrics) => {
     setStudentProfile(metrics);
-    setView('student-lesson'); // Instantly transition to the adapted curriculum
+    setView('student-lesson');
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 font-sans p-8 flex flex-col items-center relative">
+    <div className="min-h-screen bg-surface font-inter text-on-surface antialiased">
+      {/* Navigation: We added your view toggles into his TopNavBar or right below it */}
+      <TopNavBar onNavigate={(v) => setView(v)} />
 
-      {/* Navigation */}
-      <div className="absolute top-6 right-8 bg-white rounded-full p-1 shadow-sm border border-slate-200 flex gap-1 z-50">
-        <button
-          onClick={() => setView('teacher')}
-          className={`px-4 py-2 rounded-full text-sm font-bold transition-colors ${view === 'teacher' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-50'}`}
-        >
-          Teacher View
-        </button>
-        <button
-          onClick={() => {
-            setStudentProfile(null);
-            setView('student-game');
-          }}
-          className={`px-4 py-2 rounded-full text-sm font-bold transition-colors ${view.startsWith('student') ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-50'}`}
-        >
-          Student View
-        </button>
-      </div>
+      {/* Conditional Rendering logic */}
+      <main>
+        {view === 'landing' && (
+          <>
+            <HeroSection />
+            <TrustBanner />
+            <FeatureSections />
+            <section className="text-center flex items-center justify-center my-24 lg:my-32 max-w-4xl mx-auto px-6 lg:px-10">
+              <p className="font-althera font-bold text-[#1a110d] text-h3 md:text-h2">
+                "The purpose of learning is growth, and our minds, unlike our bodies, can continue growing as we continue to live."
+              </p>
+            </section>
+          </>
+        )}
 
-      <header className="mb-12 text-center mt-10">
-        <div className="flex justify-center mb-4">
-          <div className="bg-slate-900 p-3 rounded-2xl shadow-lg">
-            <BrainCircuit className="w-8 h-8 text-white" />
-          </div>
-        </div>
-        <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 mb-2">LumynMinds</h1>
-      </header>
-
-      <main className="w-full max-w-5xl flex-1 flex flex-col items-center">
         {view === 'teacher' && (
-          !graphData ? <FileUpload onUploadSuccess={handleUploadSuccess} /> : <Dashboard graphData={graphData} />
+          <div className="py-20 flex flex-col items-center">
+            {!graphData ? <FileUpload onUploadSuccess={handleUploadSuccess} /> : <Dashboard graphData={graphData} />}
+          </div>
         )}
 
         {view === 'student-game' && (
-          <Assessment onComplete={handleAssessmentComplete} />
+          <div className="py-20">
+            <Assessment onComplete={handleAssessmentComplete} />
+          </div>
         )}
 
         {view === 'student-lesson' && (
-          !graphData ? (
-            <div className="text-center mt-20 text-slate-500">
-              <p>Teacher needs to upload a curriculum first!</p>
-            </div>
-          ) : (
-            <Dashboard graphData={graphData} studentProfile={studentProfile} />
-          )
+          <div className="py-20">
+            {!graphData ? <p className="text-center">Teacher needs to upload a curriculum first!</p> : <Dashboard graphData={graphData} studentProfile={studentProfile} />}
+          </div>
         )}
       </main>
-
+      
+      <Footer />
     </div>
   );
 }
