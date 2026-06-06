@@ -269,4 +269,28 @@ router.post('/student/login', async (req, res) => {
   }
 });
 
+// =========================
+// Fetch Students by Institute
+// =========================
+router.get('/students', async (req, res) => {
+  try {
+    const { institute } = req.query;
+
+    if (!institute) {
+      return res.status(400).json({ success: false, message: 'Institute parameter is required' });
+    }
+
+    // Find all users who are students AND belong to the requested institute
+    const students = await User.find({
+      role: 'student',
+      institute: { $regex: new RegExp(`^${institute}$`, 'i') } // Case-insensitive!
+    }).select('-password');
+
+    res.json({ success: true, students });
+
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 module.exports = router;

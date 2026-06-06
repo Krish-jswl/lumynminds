@@ -83,7 +83,7 @@ function App() {
 
         {view === 'teacher' && (
           <div className="pt-24">
-            <EducatorDashboard onNavigate={handleNavigate} />
+            <EducatorDashboard currentUser={currentUser} onNavigate={handleNavigate} />
           </div>
         )}
 
