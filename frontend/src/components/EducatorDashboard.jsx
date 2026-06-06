@@ -9,15 +9,169 @@ import {
   UserPlus,
   BookOpen,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Volume2
 } from 'lucide-react';
 
+/* ── Block Card Sub-Component (localized state for quiz/challenge) ── */
+function BlockCard({ block }) {
+  const [submitted, setSubmitted] = useState(false);
+  const [answer, setAnswer] = useState('');
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  const typeLabel = (block.type || 'block')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+
+  const handlePlayAudio = () => {
+    if (window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+    const utterance = new SpeechSynthesisUtterance(block.content);
+    utterance.onend = () => setIsSpeaking(false);
+    setIsSpeaking(true);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const renderContent = () => {
+    const t = (block.type || '').toLowerCase();
+
+    /* ── Quiz / Challenge ── */
+    if (t === 'quiz' || t === 'challenge') {
+      return (
+        <div className="mt-3">
+          <p className="text-on-surface font-bold text-sm leading-relaxed mb-4">
+            {block.content}
+          </p>
+          {submitted ? (
+            <div className="flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-200 rounded-lg">
+              <CheckCircle className="w-5 h-5 text-green-600" strokeWidth={2} />
+              <span className="text-green-700 font-semibold text-sm">✓ Response Recorded for AI Review</span>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+                placeholder="Type your answer..."
+                className="flex-1 px-4 py-2.5 border border-outline-variant rounded-lg bg-surface-container-lowest text-on-surface font-body-md text-sm focus:ring-2 focus:ring-primary-container focus:border-primary-container outline-none transition-all"
+              />
+              <button
+                onClick={() => setSubmitted(true)}
+                disabled={!answer.trim()}
+                className="px-6 py-2.5 bg-primary text-on-primary font-bold text-sm rounded-lg hover:opacity-90 active:scale-95 transition-all disabled:opacity-40"
+              >
+                Submit
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    /* ── Audio Script ── */
+    if (t === 'audio_script') {
+      return (
+        <div className="mt-3">
+          <button
+            onClick={handlePlayAudio}
+            className={`mb-3 flex items-center gap-2 px-5 py-2.5 rounded-lg font-bold text-sm transition-all active:scale-95 ${
+              isSpeaking
+                ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                : 'bg-primary-container text-on-primary-container hover:opacity-90'
+            }`}
+          >
+            <Volume2 className="w-5 h-5" strokeWidth={2} />
+            {isSpeaking ? 'Stop Audio' : 'Play Audio'}
+          </button>
+          <div className="text-on-surface-variant font-body-md whitespace-pre-wrap bg-surface-container-low p-4 rounded-lg text-sm leading-relaxed">
+            {block.content}
+          </div>
+        </div>
+      );
+    }
+
+    /* ── Visual Prompt / Diagram Description ── */
+    if (t === 'visual_prompt' || t === 'diagram_description') {
+      return (
+        <div className="mt-3">
+          <img
+            src="https://placehold.co/600x300/ffeae1/9f4200?text=AI+Visual+Generation"
+            alt="Generated Visual"
+            className="w-full h-48 object-cover rounded-lg mb-4"
+          />
+          <div className="bg-surface-container-low p-4 rounded-lg">
+            <p className="text-[11px] uppercase tracking-wider font-bold text-on-surface-variant mb-1">Generation Prompt:</p>
+            <p className="text-on-surface-variant font-body-md text-sm leading-relaxed whitespace-pre-wrap">
+              {block.content}
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── Mermaid Graph ── */
+    if (t === 'mermaid_graph') {
+      return (
+        <div className="mt-3">
+          <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto text-sm">
+            <code>{block.content}</code>
+          </pre>
+        </div>
+      );
+    }
+
+    /* ── Default Fallback (simplified_text, summary, analogy, worked_example, etc.) ── */
+    return (
+      <div className="mt-3 text-on-surface-variant font-body-md whitespace-pre-wrap bg-surface-container-low p-4 rounded-lg text-sm leading-relaxed">
+        {block.content}
+      </div>
+    );
+  };
+
+  return (
+    <div className="bg-white border border-outline-variant rounded-xl p-5 transition-all hover:shadow-md">
+      {/* Block Type Label */}
+      <p className="font-label-md text-label-md text-primary font-bold uppercase tracking-wider">
+        {typeLabel}
+      </p>
+
+      {/* Type-specific Content */}
+      {renderContent()}
+
+      {/* Metadata Badges */}
+      {block.metadata && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {block.metadata.chunk_size != null && (
+            <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-[11px] font-semibold">
+              Chunk Size: {block.metadata.chunk_size}
+            </span>
+          )}
+          {block.metadata.visual_density != null && (
+            <span className="px-3 py-1 bg-tertiary/10 text-tertiary rounded-full text-[11px] font-semibold">
+              Visual Density: {block.metadata.visual_density}
+            </span>
+          )}
+          {block.metadata.reading_level != null && (
+            <span className="px-3 py-1 bg-secondary/10 text-secondary rounded-full text-[11px] font-semibold">
+              Reading Level: {block.metadata.reading_level}
+            </span>
+          )}
+          {block.metadata.interactivity != null && (
+            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[11px] font-semibold">
+              Interactivity: {block.metadata.interactivity}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Static Data ── */
-const knowledgeGraphRows = [
-  { id: 'BIO-C01', difficulty: 'Introductory', diffColor: 'bg-green-100 text-green-700', load: '1.2 (Low)', blocks: 'Cell Theory, Membrane Struct.' },
-  { id: 'BIO-C02', difficulty: 'Intermediate', diffColor: 'bg-orange-100 text-orange-700', load: '4.8 (Med)', blocks: 'Mitosis Phases, ATP Cycle' },
-  { id: 'BIO-C03', difficulty: 'Advanced', diffColor: 'bg-red-100 text-red-700', load: '8.9 (High)', blocks: 'CRISPR Editing, RNA Seq.' },
-];
 
 const sliderGroups = [
   {
@@ -51,19 +205,25 @@ const sliderGroups = [
 
 function EducatorDashboard({ onNavigate, currentUser }) {
   /* ── State ── */
-  const [uploadStatus, setUploadStatus] = useState('idle');
+  const [uploadStatus, setUploadStatus] = useState('idle'); // 'idle' | 'uploading' | 'success'
   const [showGraph, setShowGraph] = useState(false);
   const [activeStudent, setActiveStudent] = useState(null);
-
-
-
-  // NOTE: This sets the default dropdown value. Change to '7' or '9' if you prefer!
   const [selectedGrade, setSelectedGrade] = useState('10');
-
   const [sliderValues, setSliderValues] = useState(
     sliderGroups.flatMap((g) => g.sliders.map((s) => s.defaultValue))
   );
   const [isDragOver, setIsDragOver] = useState(false);
+
+  /* ── Backend Pipeline State ── */
+  const [knowledgeGraph, setKnowledgeGraph] = useState([]);
+  const [sourceText, setSourceText] = useState('');
+  const [learningBlocks, setLearningBlocks] = useState([]);
+  const [isGeneratingBlocks, setIsGeneratingBlocks] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+
+  /* ── Block Viewer State ── */
+  const [viewingBlocks, setViewingBlocks] = useState(null);
+  const [viewingConceptName, setViewingConceptName] = useState('');
   const fileInputRef = useRef(null);
 
   /* ── Dynamic Student State ── */
@@ -119,15 +279,89 @@ function EducatorDashboard({ onNavigate, currentUser }) {
   const filteredStudents = students.filter(student => student.grade === `Grade ${selectedGrade}`);
 
   /* ── Handlers ── */
-  const simulateUpload = () => {
+  const handleFileUpload = async (file) => {
     setUploadStatus('uploading');
-    setTimeout(() => setUploadStatus('success'), 2000);
+    setUploadError('');
+    try {
+      const formData = new FormData();
+      formData.append('curriculum', file);
+      const res = await fetch('http://localhost:5000/api/ingest/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || 'Upload failed');
+      setKnowledgeGraph(json.data || []);
+      setSourceText(json.sourceText || '');
+      setUploadStatus('success');
+    } catch (err) {
+      console.error('Upload error:', err);
+      setUploadError(err.message);
+      setUploadStatus('idle');
+    }
+  };
+
+  const generateBlocks = async () => {
+    setIsGeneratingBlocks(true);
+    setUploadError('');
+    try {
+      const res = await fetch('http://localhost:5000/api/ingest/generate-blocks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ concepts: knowledgeGraph, sourceText }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || 'Block generation failed');
+      setLearningBlocks(json.data || []);
+    } catch (err) {
+      console.error('Block generation error:', err);
+      setUploadError('Block Generation Failed: ' + err.message);
+    } finally {
+      setIsGeneratingBlocks(false);
+    }
   };
 
   const handleDragOver = (e) => { e.preventDefault(); setIsDragOver(true); };
   const handleDragLeave = () => setIsDragOver(false);
-  const handleDrop = (e) => { e.preventDefault(); setIsDragOver(false); simulateUpload(); };
-  const handleFileChange = (e) => { if (e.target.files.length > 0) simulateUpload(); };
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFileUpload(file);
+  };
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) handleFileUpload(file);
+  };
+
+  /* ── Difficulty badge color helper ── */
+  const getDifficultyStyle = (difficulty) => {
+    if (typeof difficulty === 'number') {
+      if (difficulty < 0.4) return 'bg-green-100 text-green-700';
+      if (difficulty < 0.7) return 'bg-orange-100 text-orange-700';
+      return 'bg-red-100 text-red-700';
+    }
+    const d = String(difficulty || '').toLowerCase();
+    if (d.includes('intro') || d.includes('easy') || d.includes('low')) return 'bg-green-100 text-green-700';
+    if (d.includes('inter') || d.includes('med')) return 'bg-orange-100 text-orange-700';
+    if (d.includes('adv') || d.includes('hard') || d.includes('high')) return 'bg-red-100 text-red-700';
+    return 'bg-gray-100 text-gray-700';
+  };
+
+  const getDifficultyLabel = (difficulty) => {
+    const n = typeof difficulty === 'number' ? difficulty : parseFloat(difficulty);
+    if (isNaN(n)) return String(difficulty);
+    if (n < 0.4) return 'Introductory';
+    if (n < 0.7) return 'Intermediate';
+    return 'Advanced';
+  };
+
+  const getCognitiveLoadLabel = (load) => {
+    const n = typeof load === 'number' ? load : parseFloat(load);
+    if (isNaN(n)) return String(load);
+    const label = n < 0.4 ? 'Low' : n < 0.7 ? 'Med' : 'High';
+    return `${n} (${label})`;
+  };
 
   const openHitlPanel = (student) => {
     setActiveStudent(student);
@@ -207,37 +441,94 @@ function EducatorDashboard({ onNavigate, currentUser }) {
                 <p className="mt-4 font-label-md text-primary">Mapping knowledge nodes...</p>
               </div>
             )}
+            {uploadError && (
+              <div className="mt-4 p-4 bg-error-container rounded-xl flex items-center gap-4">
+                <AlertCircle className="w-5 h-5 text-error shrink-0" strokeWidth={2} />
+                <span className="font-label-md text-label-md text-on-error-container">{uploadError}</span>
+              </div>
+            )}
+
             {uploadStatus === 'success' && (
-              <div className="mt-4 p-4 bg-tertiary-fixed rounded-xl flex items-center justify-between">
+              <div className="mt-4 p-4 bg-tertiary-fixed rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-4">
-                  <CheckCircle className="w-6 h-6 text-tertiary" strokeWidth={2} />
-                  <span className="font-label-md text-label-md text-on-tertiary-fixed">Material processed successfully.</span>
+                  <CheckCircle className="w-6 h-6 text-tertiary shrink-0" strokeWidth={2} />
+                  <span className="font-label-md text-label-md text-on-tertiary-fixed">
+                    Material processed — {knowledgeGraph.length} concepts mapped.
+                  </span>
                 </div>
-                <button onClick={() => setShowGraph(true)} className="bg-surface-container-lowest text-tertiary px-6 py-2 rounded-lg font-bold text-label-md hover:bg-white transition-all shadow-sm">View Knowledge Graph</button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowGraph(true)}
+                    className="bg-surface-container-lowest text-tertiary px-6 py-2 rounded-lg font-bold text-label-md hover:bg-white transition-all shadow-sm"
+                  >
+                    View Knowledge Graph
+                  </button>
+                  <button
+                    onClick={generateBlocks}
+                    disabled={isGeneratingBlocks || knowledgeGraph.length === 0}
+                    className="bg-primary text-on-primary px-6 py-2 rounded-lg font-bold text-label-md hover:opacity-90 transition-all shadow-sm disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {isGeneratingBlocks && <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2} />}
+                    {isGeneratingBlocks ? 'Generating...' : 'Generate Atomic Blocks'}
+                  </button>
+                </div>
               </div>
             )}
           </div>
 
           {/* Knowledge Graph */}
-          {showGraph && (
+          {showGraph && knowledgeGraph.length > 0 && (
             <div className="bg-white border border-[#E2E8F0] rounded-[24px] p-6 transition-all duration-500 animate-fade-in-up hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.05)]">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-h3 text-h3 text-on-surface">Knowledge Graph</h3>
+                <span className="px-4 py-1 bg-primary-fixed-dim text-on-primary-fixed-variant rounded-full text-label-sm">
+                  {knowledgeGraph.length} Concepts
+                </span>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left font-label-md text-label-md">
                   <thead className="text-on-surface-variant border-b border-outline-variant">
-                    <tr><th className="py-4 px-4">ID</th><th className="py-4 px-4">Difficulty</th><th className="py-4 px-4">Load</th><th className="py-4 px-4">Blocks</th></tr>
+                    <tr>
+                      <th className="py-4 px-4">Concept ID</th>
+                      <th className="py-4 px-4">Concept</th>
+                      <th className="py-4 px-4">Difficulty</th>
+                      <th className="py-4 px-4">Cognitive Load</th>
+                      <th className="py-4 px-4">Blocks</th>
+                    </tr>
                   </thead>
                   <tbody className="divide-y divide-outline-variant">
-                    {knowledgeGraphRows.map((row) => (
-                      <tr key={row.id} className="hover:bg-surface-container-low transition-colors">
-                        <td className="py-4 px-4 font-mono text-primary">{row.id}</td>
-                        <td className="py-4 px-4"><span className={`px-2 py-0.5 ${row.diffColor} rounded-full text-[10px] uppercase font-bold`}>{row.difficulty}</span></td>
-                        <td className="py-4 px-4">{row.load}</td>
-                        <td className="py-4 px-4">{row.blocks}</td>
-                      </tr>
-                    ))}
+                    {knowledgeGraph.map((row, idx) => {
+                      const matchingBlocks = learningBlocks.filter(
+                        (b) => b.concept_id === row.concept_id
+                      );
+                      return (
+                        <tr key={row.concept_id || idx} className="hover:bg-surface-container-low transition-colors">
+                          <td className="py-4 px-4 font-mono text-primary">{row.concept_id}</td>
+                          <td className="py-4 px-4">{row.concept}</td>
+                          <td className="py-4 px-4">
+                            <span className={`px-2 py-0.5 ${getDifficultyStyle(row.difficulty)} rounded-full text-[10px] uppercase font-bold`}>
+                              {getDifficultyLabel(row.difficulty)}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4">{getCognitiveLoadLabel(row.cognitive_load)}</td>
+                          <td className="py-4 px-4">
+                            {matchingBlocks.length > 0 ? (
+                              <button
+                                onClick={() => {
+                                  setViewingBlocks(matchingBlocks);
+                                  setViewingConceptName(row.concept);
+                                }}
+                                className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-[10px] uppercase font-bold cursor-pointer hover:bg-green-200 transition-colors shadow-sm"
+                              >
+                                {matchingBlocks.length} Blocks Generated
+                              </button>
+                            ) : (
+                              <span className="text-on-surface-variant italic text-[12px]">Pending...</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -357,6 +648,44 @@ function EducatorDashboard({ onNavigate, currentUser }) {
           <button onClick={closeHitlPanel} className="flex-1 py-3 bg-primary-container text-on-primary font-bold rounded-xl shadow-lg hover:bg-primary transition-all">Save Profile</button>
         </div>
       </div>
+
+      {/* ── Learning Block Viewer Modal ── */}
+      {viewingBlocks && (
+        <>
+          {/* Overlay */}
+          <div
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[70]"
+            onClick={() => setViewingBlocks(null)}
+          />
+
+          {/* Modal */}
+          <div className="fixed inset-0 z-[80] flex items-center justify-center p-6">
+            <div className="max-w-4xl w-full bg-surface-container-lowest rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
+
+              {/* Header */}
+              <div className="p-6 border-b border-outline-variant flex items-center justify-between shrink-0">
+                <div>
+                  <h3 className="font-h3 text-h3 text-on-surface">Atomic Blocks</h3>
+                  <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">{viewingConceptName}</p>
+                </div>
+                <button
+                  onClick={() => setViewingBlocks(null)}
+                  className="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-outline hover:text-primary hover:shadow transition-all"
+                >
+                  <X className="w-5 h-5" strokeWidth={2} />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="overflow-y-auto p-6 bg-surface space-y-6 custom-scrollbar">
+                {viewingBlocks.map((block, i) => (
+                  <BlockCard key={block._id || i} block={block} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </main>
   );
 }
