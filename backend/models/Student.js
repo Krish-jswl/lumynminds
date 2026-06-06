@@ -1,20 +1,105 @@
-// Tracked by Git
 const mongoose = require('mongoose');
 
-const studentSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  cnv_state: {
-    attention_span: { value: { type: Number, default: 0.5 }, confidence: { type: Number, default: 0.1 } },
-    reading_support: { value: { type: Number, default: 0.5 }, confidence: { type: Number, default: 0.1 } },
-    sensory_sensitivity: { value: { type: Number, default: 0.5 }, confidence: { type: Number, default: 0.1 } },
-    predictability_need: { value: { type: Number, default: 0.5 }, confidence: { type: Number, default: 0.1 } },
-    gamification_affinity: { value: { type: Number, default: 0.5 }, confidence: { type: Number, default: 0.1 } },
-    audio_preference: { value: { type: Number, default: 0.5 }, confidence: { type: Number, default: 0.1 } },
-    cognitive_fatigue_rate: { value: { type: Number, default: 0.5 }, confidence: { type: Number, default: 0.1 } },
-    chunking_requirement: { value: { type: Number, default: 0.5 }, confidence: { type: Number, default: 0.1 } },
-    visual_processing_load: { value: { type: Number, default: 0.5 }, confidence: { type: Number, default: 0.1 } }
+const CNVSchema = new mongoose.Schema(
+  {
+    value: {
+      type: Number,
+      default: 0.5,
+      min: 0,
+      max: 1
+    },
+    confidence: {
+      type: Number,
+      default: 0.1,
+      min: 0,
+      max: 1
+    }
   },
-  is_baseline_valid: { type: Boolean, default: true }
-}, { timestamps: true });
+  { _id: false }
+);
+
+const AssessmentHistorySchema = new mongoose.Schema(
+  {
+    validity: {
+      type: Number,
+      min: 0,
+      max: 1
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    },
+    sessionEvidence: {
+      attention_support: Number,
+      reading_support: Number,
+      sensory_support: Number,
+      structure_support: Number,
+      working_memory_support: Number,
+      audio_support: Number,
+      visual_support: Number,
+      gamification_support: Number,
+      chunking_support: Number,
+      fatigue_sensitivity: Number,
+      abstraction_support: Number,
+      pace_support: Number
+    }
+  },
+  { _id: false }
+);
+
+const studentSchema = new mongoose.Schema(
+  {
+    studentId: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true
+    },
+
+    name: {
+      type: String,
+      default: ''
+    },
+
+    assessmentCount: {
+      type: Number,
+      default: 0
+    },
+
+    lastAssessmentDate: {
+      type: Date
+    },
+
+    lastAssessmentValidity: {
+      type: Number,
+      min: 0,
+      max: 1,
+      default: 0
+    },
+
+    assessmentHistory: {
+      type: [AssessmentHistorySchema],
+      default: []
+    },
+
+    cnv_profile: {
+      attention_support: { type: CNVSchema, default: () => ({}) },
+      reading_support: { type: CNVSchema, default: () => ({}) },
+      sensory_support: { type: CNVSchema, default: () => ({}) },
+      structure_support: { type: CNVSchema, default: () => ({}) },
+      working_memory_support: { type: CNVSchema, default: () => ({}) },
+      audio_support: { type: CNVSchema, default: () => ({}) },
+      visual_support: { type: CNVSchema, default: () => ({}) },
+      gamification_support: { type: CNVSchema, default: () => ({}) },
+      chunking_support: { type: CNVSchema, default: () => ({}) },
+      fatigue_sensitivity: { type: CNVSchema, default: () => ({}) },
+      abstraction_support: { type: CNVSchema, default: () => ({}) },
+      pace_support: { type: CNVSchema, default: () => ({}) }
+    }
+  },
+  {
+    timestamps: true
+  }
+);
 
 module.exports = mongoose.model('Student', studentSchema);

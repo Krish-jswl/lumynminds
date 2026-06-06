@@ -28,6 +28,10 @@ router.post('/upload', upload.single('curriculum'), async (req, res) => {
       return res.status(400).json({ error: 'No PDF file uploaded.' });
     }
 
+    const source_document = req.file.originalname || 'Unknown Document';
+    const subject = req.body.subject || 'General';
+    const grade = req.body.grade || 'All';
+
     console.log("📄 File Received. Extracting text...");
 
     let rawText = "";
@@ -86,6 +90,9 @@ router.post('/upload', upload.single('curriculum'), async (req, res) => {
 
     blocks.forEach((block, index) => {
       block.concept_id = `concept_${Date.now()}_${index}`;
+      block.source_document = source_document;
+      block.subject = subject;
+      block.grade = grade;
     });
     
     console.log(`💾 Saving ${blocks.length} blocks to database...`);
@@ -515,6 +522,10 @@ router.post('/generate-blocks', async (req, res) => {
       return res.status(400).json({ error: 'sourceText is required and must not be empty.' });
     }
 
+    const source_document = concepts[0]?.source_document || 'Unknown Document';
+    const subject = concepts[0]?.subject || 'General';
+    const grade = concepts[0]?.grade || 'All';
+
     const limitedConcepts = concepts.slice(0, MAX_CONCEPTS);
     const truncatedSource = sourceText.substring(0, MAX_SOURCE_TEXT);
     console.log(`\n🚀 Generating learning blocks for ${limitedConcepts.length} concepts (capped from ${concepts.length})...`);
@@ -528,6 +539,11 @@ router.post('/generate-blocks', async (req, res) => {
       const concept = limitedConcepts[i];
       try {
         const blocks = await processOneConcept(concept, truncatedSource, i, limitedConcepts.length);
+        blocks.forEach(b => {
+          b.source_document = source_document;
+          b.subject = subject;
+          b.grade = grade;
+        });
         allBlocks.push(...blocks);
       } catch (conceptErr) {
         console.error(`❌ Failed concept ${concept.concept_id}:`, conceptErr.message);

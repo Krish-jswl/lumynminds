@@ -9,7 +9,10 @@ const learningBlockSchema = new mongoose.Schema({
   abstraction_level: { type: Number, required: true },
   requires_visualization: { type: Boolean, default: false },
   learning_objectives: [{ type: String }],
-  misconceptions: [{ type: String }]
+  misconceptions: [{ type: String }],
+  source_document: { type: String, default: 'Unknown Document' },
+  subject: { type: String, default: 'General' },
+  grade: { type: String, default: 'All' }
 }, { timestamps: true });
 
 module.exports = mongoose.model('KnowledgeGraph', learningBlockSchema);
