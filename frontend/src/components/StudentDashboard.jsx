@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import mermaid from 'mermaid';
 import {
   BookOpen, Zap, CheckCircle2, Trophy, Star, Flame, ChevronLeft, ChevronRight,
   Lightbulb, HelpCircle, Brain, Headphones, Eye, Sparkles, Coffee, Loader2,
@@ -7,6 +8,13 @@ import {
 } from 'lucide-react';
 
 const API_BASE = 'http://localhost:5000/api';
+
+// Initialize mermaid globally
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'neutral',
+  securityLevel: 'loose',
+});
 
 const BLOCK_STYLES = {
   simplified_text: { border: 'border-l-slate-400', bg: 'bg-white', icon: BookOpen, iconColor: 'text-slate-600', label: 'Core Content' },
@@ -24,41 +32,30 @@ const BLOCK_STYLES = {
   mermaid_graph: { border: 'border-l-teal-500', bg: 'bg-teal-50', icon: BarChart3, iconColor: 'text-teal-600', label: 'Graph' },
 };
 
-function MermaidRenderer({ code }) {
+function MermaidViewer({ chart }) {
   const containerRef = useRef(null);
-  const [svg, setSvg] = useState('');
-  const [error, setError] = useState(false);
-  const rendered = useRef(false);
 
   useEffect(() => {
-    if (!code || !code.trim() || rendered.current) return;
-    rendered.current = true;
-    let cancelled = false;
+    if (containerRef.current && chart) {
+      // Clear previous render
+      containerRef.current.innerHTML = '';
+      
+      // Render the new chart safely
+      mermaid.render(`mermaid-${Math.random().toString(36).substr(2, 9)}`, chart)
+        .then(({ svg }) => {
+          if (containerRef.current) {
+            containerRef.current.innerHTML = svg;
+          }
+        })
+        .catch(err => console.error("Mermaid render error:", err));
+    }
+  }, [chart]);
 
-    const doRender = async () => {
-      try {
-        const mod = await import('mermaid');
-        const mermaid = mod.default || mod;
-        mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'loose' });
-        const id = 'mm-' + Math.random().toString(36).substr(2, 9);
-        const { svg: rendered } = await mermaid.render(id, code);
-        if (!cancelled) setSvg(rendered);
-      } catch (e) {
-        console.error('Mermaid render error:', e);
-        if (!cancelled) setError(true);
-      }
-    };
-    doRender();
-    return () => { cancelled = true; };
-  }, [code]);
-
-  if (error) {
-    return <pre className="bg-slate-100 text-slate-600 p-4 rounded-xl text-xs overflow-x-auto font-mono border border-slate-200">{code}</pre>;
-  }
-  if (!svg) {
-    return <div className="flex items-center justify-center py-8"><Loader2 className="w-6 h-6 text-teal-500 animate-spin" /></div>;
-  }
-  return <div ref={containerRef} className="overflow-x-auto flex justify-center py-4" dangerouslySetInnerHTML={{ __html: svg }} />;
+  return (
+    <div className="flex justify-center overflow-x-auto bg-slate-50 p-4 rounded-xl border border-slate-200">
+      <div ref={containerRef} />
+    </div>
+  );
 }
 
 function AudioBlock({ content }) {
@@ -211,19 +208,21 @@ function BlockRenderer({ block, rules, onQuizCorrect }) {
   const fontSize = rules.font_size === 'large' ? 'text-base leading-relaxed' : 'text-sm leading-relaxed';
 
   return (
-    <div className={`border-l-4 ${style.border} ${style.bg} rounded-r-xl p-5 transition-all duration-300 hover:shadow-md mb-4`}>
-      <div className="flex items-center gap-2 mb-3">
-        <Icon className={`w-4 h-4 ${style.iconColor}`} />
+    <div className={`h-full border-l-4 ${style.border} ${style.bg} rounded-r-xl p-6 transition-all duration-300 hover:shadow-md border-y border-r border-slate-100/50`}>
+      <div className="flex items-center gap-2 mb-4">
+        <div className={`p-2 bg-white rounded-lg shadow-sm ${style.iconColor}`}>
+          <Icon className="w-4 h-4" />
+        </div>
         <span className={`text-xs font-bold uppercase tracking-wider ${style.iconColor}`}>{style.label}</span>
       </div>
       {isMermaid ? (
-        <MermaidRenderer code={block.content} />
+        <MermaidViewer chart={block.content} />
       ) : isAudio ? (
         <AudioBlock content={block.content} />
       ) : isQuiz ? (
         <QuizBlock content={block.content} onCorrect={onQuizCorrect} gamification={rules.enable_gamification} />
       ) : isCheckpoint ? (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <div className={`${fontSize} text-slate-700 whitespace-pre-wrap`}>{block.content}</div>
           <div className="flex items-center gap-2 text-blue-600 bg-blue-100 px-3 py-1.5 rounded-lg w-fit mt-2">
             <CheckCircle2 className="w-3.5 h-3.5" />
@@ -231,7 +230,7 @@ function BlockRenderer({ block, rules, onQuizCorrect }) {
           </div>
         </div>
       ) : isReflection ? (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <div className={`${fontSize} text-slate-700 whitespace-pre-wrap italic`}>{block.content}</div>
           <div className="flex items-center gap-2 text-rose-600 bg-rose-100 px-3 py-1.5 rounded-lg w-fit mt-2">
             <Brain className="w-3.5 h-3.5" />
@@ -319,7 +318,6 @@ function filterBlocksForProfile(conceptBlocks, rules, activeProfiles) {
 
   const result = [];
   const added = new Set();
-  const injectedReasons = [];
 
   const addBlocks = (type, reason) => {
     if (byType[type] && byType[type].length > 0) {
@@ -386,7 +384,7 @@ function filterBlocksForProfile(conceptBlocks, rules, activeProfiles) {
 export function StudentHomeDashboard({ onOpenLesson, studentId, currentUser }) {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ count: 0, score: 85 });
+  const [stats, setStats] = useState({ count: 0 });
 
   useEffect(() => {
     if (!studentId) return;
@@ -408,7 +406,6 @@ export function StudentHomeDashboard({ onOpenLesson, studentId, currentUser }) {
           const docMap = {};
 
           blocks.forEach(b => {
-            // Group by source_document
             const docName = b.source_document || 'General Concepts';
             const subject = b.subject || 'Uncategorized';
             if (!docMap[docName]) {
@@ -553,7 +550,7 @@ export default function StudentDashboard({ conceptFilter, studentId }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!studentId || !conceptFilter) return; // conceptFilter is now document name
+    if (!studentId || !conceptFilter) return; 
     const load = async () => {
       try {
         const [rulesRes, blocksRes] = await Promise.all([
@@ -573,7 +570,6 @@ export default function StudentDashboard({ conceptFilter, studentId }) {
           const blocksData = await blocksRes.json();
           const allBlocks = blocksData.blocks || [];
           
-          // Filter blocks by the selected document
           const docBlocks = allBlocks.filter(b => b.source_document === conceptFilter);
           setDocumentName(conceptFilter);
 
@@ -631,7 +627,6 @@ export default function StudentDashboard({ conceptFilter, studentId }) {
 
   const isLowStim = rules.theme === 'low_stimulation' || rules.reduce_visual_noise;
   const bgClass = isLowStim ? 'bg-stone-50' : 'bg-slate-50';
-  const cardBg = isLowStim ? 'bg-stone-50 border-stone-200' : 'bg-white border-slate-200';
   const headingColor = isLowStim ? 'text-stone-800' : 'text-slate-800';
 
   const currentConcept = concepts[currentConceptIdx];
@@ -639,6 +634,10 @@ export default function StudentDashboard({ conceptFilter, studentId }) {
   const conceptLabel = currentConcept?.id?.replace(/_/g, ' ').replace(/^c\s*\d+\s*/i, '') || '';
   const showBreak = rules.enable_break_reminders && currentConceptIdx > 0 && currentConceptIdx % 3 === 0;
   const progressPct = concepts.length > 0 ? ((completedConcepts.size) / concepts.length) * 100 : 0;
+
+  // Split Core vs Scaffolding
+  const coreBlock = filteredBlocks.find(b => b.type === 'simplified_text' || b.type === 'summary');
+  const scaffoldingBlocks = filteredBlocks.filter(b => b.block_id !== coreBlock?.block_id);
 
   return (
     <div className={`min-h-screen pb-20 ${bgClass}`}>
@@ -673,35 +672,63 @@ export default function StudentDashboard({ conceptFilter, studentId }) {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-6">
+      <div className="max-w-6xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
           
           <div className="xl:col-span-3 space-y-6">
             {showBreak && <BreakReminder />}
 
             {currentConcept && (
-              <div className={`${cardBg} border rounded-2xl p-6 md:p-8 shadow-sm`}>
-                <div className="flex items-center justify-between mb-8 border-b pb-4">
-                  <h2 className={`text-2xl font-bold ${headingColor} capitalize`}>{conceptLabel}</h2>
+              <div className={`bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden mb-8`}>
+                
+                {/* 1. Concept Header */}
+                <div className="bg-blue-600 px-8 py-6 flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl font-extrabold text-white capitalize leading-tight">{conceptLabel}</h2>
+                    <p className="text-blue-100 mt-1 font-medium text-sm">Core Concept</p>
+                  </div>
                   {completedConcepts.has(currentConcept.id) && (
-                    <span className="bg-green-100 text-green-700 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 border border-green-200">
+                    <span className="bg-green-400/20 text-green-100 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 border border-green-400/30">
                       <CheckCircle2 className="w-4 h-4" /> Completed
                     </span>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  {filteredBlocks.map((block, i) => (
-                    <div key={block.block_id || `${block.type}-${i}`}>
-                      {block.injectedReason && (
-                        <div className="flex items-center gap-2 mb-1.5 ml-2">
-                          <Zap className="w-3 h-3 text-amber-500" />
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{block.injectedReason}</span>
-                        </div>
-                      )}
-                      <BlockRenderer block={block} rules={rules} onQuizCorrect={handleQuizCorrect} />
+                <div className="p-6 md:p-8">
+                  {/* 2. The Hero Content */}
+                  {coreBlock && (
+                    <div className={`prose prose-slate max-w-none mb-10 ${rules.font_size === 'large' ? 'text-xl leading-relaxed' : 'text-base leading-relaxed'}`}>
+                      <p className="text-slate-800 whitespace-pre-wrap">{coreBlock.content}</p>
                     </div>
-                  ))}
+                  )}
+
+                  {/* 3. The Scaffolding Grid */}
+                  {scaffoldingBlocks.length > 0 && (
+                    <>
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className="h-px bg-slate-200 flex-1"></div>
+                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Personalized Helps</span>
+                        <div className="h-px bg-slate-200 flex-1"></div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {scaffoldingBlocks.map((block, i) => (
+                          <div key={block.block_id || `${block.type}-${i}`} className="h-full flex flex-col">
+                            {block.injectedReason && (
+                              <div className="flex items-center gap-2 mb-2 ml-2">
+                                <Zap className="w-3.5 h-3.5 text-amber-500" />
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{block.injectedReason}</span>
+                              </div>
+                            )}
+                            <div className="flex-1">
+                              <BlockRenderer block={block} rules={rules} onQuizCorrect={handleQuizCorrect} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
                   {filteredBlocks.length === 0 && (
                     <p className="text-sm text-slate-400 italic py-8 text-center">No learning blocks available for this concept.</p>
                   )}
