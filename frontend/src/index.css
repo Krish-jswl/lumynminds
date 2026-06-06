@@ -45,4 +45,12 @@
   .animation-delay-600 { animation-delay: 600ms; }
   .animation-delay-700 { animation-delay: 700ms; }
   .animation-delay-800 { animation-delay: 800ms; }
+
+  /* Custom scrollbar for student roster & HITL drawer */
+  .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: #dec0b3; border-radius: 10px; }
+
+  /* Range slider accent */
+  input[type="range"] { accent-color: #f97d36; }
 }

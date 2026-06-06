@@ -9,9 +9,14 @@ import Dashboard from './components/Dashboard';
 import Assessment from './components/Assessment';
 import EducatorAuth from './components/EducatorAuth';
 import StudentAuth from './components/StudentAuth';
+<<<<<<< HEAD
 import StudentDashboard, { StudentHomeDashboard } from './components/StudentDashboard';
 
 const API_BASE = 'http://localhost:5000/api';
+=======
+import EducatorDashboard from './components/EducatorDashboard';
+import PastMaterials from './components/PastMaterials';
+>>>>>>> 69cd1cd1f14792f908f737c714c2628bea68259f
 
 function App() {
   const [view, setView] = useState('landing');
@@ -127,10 +132,19 @@ function App() {
         )}
 
         {view === 'teacher' && (
+<<<<<<< HEAD
           <div className="pt-32 pb-20 px-6 max-w-5xl mx-auto">
             <h2 className="text-2xl font-bold mb-4">Welcome, Educator {currentUser?.name?.split(' ')[0]}</h2>
             {!graphData ? <FileUpload onUploadSuccess={handleUploadSuccess} /> : <Dashboard graphData={graphData} />}
+=======
+          <div className="pt-24">
+            <EducatorDashboard currentUser={currentUser} onNavigate={handleNavigate} />
+>>>>>>> 69cd1cd1f14792f908f737c714c2628bea68259f
           </div>
+        )}
+
+        {view === 'past-materials' && (
+          <PastMaterials />
         )}
 
         {view === 'student-game' && (
