@@ -8,6 +8,9 @@ const LearningBlockSchema = new mongoose.Schema({
   support_tags: [{ type: String }],
   learning_objectives: [{ type: String }],
   misconceptions: [{ type: String }],
+  source_document: { type: String, default: 'Unknown Document' },
+  subject: { type: String, default: 'General' },
+  grade: { type: String, default: 'All' },
   metadata: {
     chunk_size: { type: String, default: 'medium' },
     visual_density: { type: String, default: 'medium' },
