@@ -1,5 +1,5 @@
 // Tracked by Git
-import React, { useState } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import { UploadCloud, FileText, Loader2, AlertCircle } from 'lucide-react';
 
@@ -49,10 +49,10 @@ export default function FileUpload({ onUploadSuccess }) {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+    <div className="w-full max-w-2xl mx-auto bg-white p-8 rounded-3xl shadow-soft border border-outline-variant/40">
       <div 
-        className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-colors ${
-          isDragging ? 'border-blue-500 bg-blue-50' : 'border-slate-300 hover:border-slate-400 bg-slate-50'
+        className={`relative border-2 border-dashed rounded-2xl p-12 text-center transition-colors ${
+          isDragging ? 'border-brand-orange bg-surface-container' : 'border-outline-variant hover:border-brand-orange/60 bg-surface-container-low/50'
         }`}
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
@@ -69,22 +69,22 @@ export default function FileUpload({ onUploadSuccess }) {
         <div className="flex flex-col items-center justify-center space-y-4 pointer-events-none">
           {file ? (
             <div className="flex flex-col items-center">
-              <FileText className="w-12 h-12 text-blue-500 mb-2" />
-              <p className="text-lg font-semibold text-slate-700">{file.name}</p>
-              <p className="text-sm text-slate-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+              <FileText className="w-12 h-12 text-brand-orange mb-2" />
+              <p className="text-lg font-semibold text-on-surface">{file.name}</p>
+              <p className="text-sm text-on-surface-variant">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
             </div>
           ) : (
             <>
-              <UploadCloud className="w-12 h-12 text-slate-400" />
-              <p className="text-lg font-medium text-slate-700">Drag & drop your curriculum PDF here</p>
-              <p className="text-sm text-slate-500">or click to browse files</p>
+              <UploadCloud className="w-12 h-12 text-primary/60" />
+              <p className="text-lg font-medium text-on-surface">Drag & drop your curriculum PDF here</p>
+              <p className="text-sm text-on-surface-variant">or click to browse files</p>
             </>
           )}
         </div>
       </div>
 
       {error && (
-        <div className="mt-6 p-4 bg-red-50 text-red-600 rounded-lg flex items-center gap-2">
+        <div className="mt-6 p-4 bg-error/10 text-error rounded-xl flex items-center gap-2 border border-error/20">
           <AlertCircle className="w-5 h-5" />
           <p className="text-sm font-medium">{error}</p>
         </div>
@@ -93,8 +93,8 @@ export default function FileUpload({ onUploadSuccess }) {
       <button
         onClick={handleUpload}
         disabled={!file || isUploading}
-        className={`w-full mt-6 py-3 px-4 rounded-xl text-white font-medium flex items-center justify-center transition-all ${
-          !file || isUploading ? 'bg-slate-300 cursor-not-allowed' : 'bg-slate-900 hover:bg-slate-800 shadow-md'
+        className={`w-full mt-6 py-4 px-6 rounded-full text-white font-semibold flex items-center justify-center transition-all ${
+          !file || isUploading ? 'bg-surface-container-high text-on-surface-variant/40 cursor-not-allowed' : 'bg-brand-orange hover:bg-brand-orange-hover shadow-card hover:-translate-y-0.5'
         }`}
       >
         {isUploading ? (

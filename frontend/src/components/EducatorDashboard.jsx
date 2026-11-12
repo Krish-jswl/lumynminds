@@ -1,11 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   CloudUpload,
   CheckCircle,
   ArrowRight,
   ChevronRight,
   X,
-  Info,
   UserPlus,
   BookOpen,
   Loader2,
@@ -117,7 +116,7 @@ function BlockCard({ block }) {
     if (t === 'mermaid_graph') {
       return (
         <div className="mt-3">
-          <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto text-sm">
+          <pre className="bg-[#1e1915] text-[#ffede6] p-4 rounded-2xl overflow-x-auto text-sm border border-outline-variant/30">
             <code>{block.content}</code>
           </pre>
         </div>
@@ -253,7 +252,7 @@ function EducatorDashboard({ onNavigate, currentUser }) {
               id: student._id,
               name: student.name,
               initials: initials,
-              profile: 'Pending Assessment',
+              profile: student.assessmentCount > 0 ? `Calibrated (${student.assessmentCount})` : 'Pending Assessment',
               grade: `Grade ${student.grade}`, // We format it as "Grade X" here
               bg: bgColors[index % bgColors.length],
               text: textColors[index % textColors.length]
@@ -285,12 +284,13 @@ function EducatorDashboard({ onNavigate, currentUser }) {
     try {
       const formData = new FormData();
       formData.append('curriculum', file);
+      formData.append('grade', selectedGrade);
       const res = await fetch('http://localhost:5000/api/ingest/upload', {
         method: 'POST',
         body: formData,
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.message || 'Upload failed');
+      if (!res.ok) throw new Error(json.error || json.message || 'Upload failed');
       setKnowledgeGraph(json.data || []);
       setSourceText(json.sourceText || '');
       setUploadStatus('success');
@@ -311,7 +311,7 @@ function EducatorDashboard({ onNavigate, currentUser }) {
         body: JSON.stringify({ concepts: knowledgeGraph, sourceText }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.message || 'Block generation failed');
+      if (!res.ok) throw new Error(json.error || json.message || 'Block generation failed');
       setLearningBlocks(json.data || []);
     } catch (err) {
       console.error('Block generation error:', err);

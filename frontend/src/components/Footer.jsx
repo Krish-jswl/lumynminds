@@ -1,10 +1,10 @@
-import React from 'react';
+import logo from '../assets/logo.png';
 
 function Footer() {
   return (
     <footer
       id="footer"
-      className="relative bg-inverse-surface text-inverse-on-surface"
+      className="relative bg-inverse-surface text-inverse-on-surface border-t border-inverse-surface/40"
     >
       <div className="max-w-container mx-auto px-6 lg:px-10 py-8 lg:py-10">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -12,14 +12,14 @@ function Footer() {
           <a
             href="/"
             id="footer-logo"
-            className="text-xl font-bold tracking-tight text-white hover:text-inverse-primary transition-colors duration-200"
+            className="flex items-center hover:opacity-80 transition-opacity duration-200"
           >
-            LumynMinds
+            <img src={logo} alt="LumynMinds" className="h-7 w-auto object-contain brightness-0 invert opacity-90" />
           </a>
 
           {/* Copyright */}
           <p className="text-label-md text-inverse-on-surface/70 font-normal">
-            © {new Date().getFullYear()} LumynMinds. All rights reserved.
+            © {new Date().getFullYear()} LumynMinds. Designed for Neuro-Inclusive Learning.
           </p>
         </div>
       </div>

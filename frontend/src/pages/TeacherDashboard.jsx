@@ -1,5 +1,5 @@
 // Tracked by Git
-import React, { useState } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -183,7 +183,6 @@ export default function TeacherDashboard() {
   const [error, setError] = useState(null);
 
   const [graphConcepts, setGraphConcepts] = useState([]);
-  const [sourceText, setSourceText] = useState('');
   const [learningBlocks, setLearningBlocks] = useState([]);
   const [blockGenResponse, setBlockGenResponse] = useState(null);
 
@@ -210,7 +209,6 @@ export default function TeacherDashboard() {
     setGraphConcepts([]);
     setLearningBlocks([]);
     setBlockGenResponse(null);
-    setSourceText('');
 
     try {
       // Phase 1: Upload PDF → Knowledge Graph
@@ -219,6 +217,7 @@ export default function TeacherDashboard() {
 
       const formData = new FormData();
       formData.append('curriculum', file);
+      formData.append('grade', grade);
 
       const uploadRes = await axios.post(`${API_BASE}/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
@@ -229,7 +228,6 @@ export default function TeacherDashboard() {
       const extractedText = uploadRes.data.sourceText || "";
       
       setGraphConcepts(concepts);
-      setSourceText(extractedText);
 
       // Phase 2: Generate Learning Blocks
       setPhase('generating');
@@ -258,7 +256,6 @@ export default function TeacherDashboard() {
     setPhaseMsg('');
     setError(null);
     setGraphConcepts([]);
-    setSourceText('');
     setLearningBlocks([]);
     setBlockGenResponse(null);
   };

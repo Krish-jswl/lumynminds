@@ -17,15 +17,6 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  @font-face {
-    font-family: 'Althera';
-    src: url('/fonts/althera.otf') format('opentype'),
-         url('/fonts/althera.ttf') format('truetype');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-  }
-
   body {
     font-family: 'Inter', system-ui, sans-serif;
     background-color: #fff8f6;

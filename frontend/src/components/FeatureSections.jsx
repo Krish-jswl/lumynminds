@@ -1,4 +1,3 @@
-import React, { useEffect, useRef, useState } from 'react';
 import educatorImg from '../assets/educator.png';
 import learnerImg from '../assets/learner.png';
 
@@ -44,7 +43,7 @@ function FeatureSections() {
             <img 
               src={educatorImg} 
               alt="Educator Dashboard" 
-              className="w-full h-auto rounded-2xl border border-outline-variant shadow-xl object-cover aspect-[4/3]" 
+              className="w-full h-auto rounded-3xl border border-outline-variant/40 shadow-soft object-cover aspect-[4/3]" 
             />
           </div>
         </section>
@@ -56,7 +55,7 @@ function FeatureSections() {
             <img 
               src={learnerImg} 
               alt="Student Learning" 
-              className="w-full h-auto rounded-2xl border border-outline-variant shadow-xl object-cover aspect-[4/3]" 
+              className="w-full h-auto rounded-3xl border border-outline-variant/40 shadow-soft object-cover aspect-[4/3]" 
             />
           </div>
 

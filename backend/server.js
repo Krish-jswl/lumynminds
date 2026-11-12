@@ -34,8 +34,18 @@ app.use('/api/adaptation', adaptationRoute);
 // Health Check
 app.get('/api/health', (req, res) => {
   res.json({
-    status: 'LumynMinds backend is running'
+    status: 'LumynMinds backend is running',
+    dbConnected: mongoose.connection.readyState === 1
   });
+});
+
+// JSON error handler (e.g., Multer upload validation errors)
+app.use((err, req, res, next) => {
+  if (err) {
+    const status = err.status || (err.name === 'MulterError' ? 400 : 400);
+    return res.status(status).json({ error: err.message || 'Request failed' });
+  }
+  next();
 });
 
 // Server Start

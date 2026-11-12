@@ -9,9 +9,10 @@ const LearningBlock = require('../models/LearningBlock');
 
 // Initialize Groq
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
 
 const MAX_SOURCE_TEXT = 4000;
-const MAX_CONCEPTS = 4;
+const MAX_CONCEPTS = 2;
 const CONCEPT_COOLDOWN_MS = 2000;
 
 function sleep(ms) {
@@ -75,18 +76,23 @@ router.post('/upload', upload.single('curriculum'), async (req, res) => {
       ${textToAnalyze}
     `;
 
-    // Call Groq LLaMA 3 70B
+    // Call Groq LLM
     const completion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
-      model: "llama-3.3-70b-versatile",
+      model: GROQ_MODEL,
       temperature: 0.2,
-      max_tokens: 4000,
+      max_tokens: 4096,
+      reasoning_effort: "low",
       response_format: { type: "json_object" },
     });
 
     const aiResponse = completion.choices[0].message.content;
     const parsedData = JSON.parse(aiResponse);
-    const blocks = parsedData.blocks;
+    const blocks = Array.isArray(parsedData?.blocks) ? parsedData.blocks : [];
+
+    if (blocks.length === 0) {
+      return res.status(502).json({ error: 'AI returned no curriculum concepts. Please try another PDF.' });
+    }
 
     blocks.forEach((block, index) => {
       block.concept_id = `concept_${Date.now()}_${index}`;
@@ -177,6 +183,19 @@ function validateMermaid(content) {
   return lower.includes('graph') || lower.includes('flowchart');
 }
 
+function sanitizeMermaid(raw) {
+  if (!raw || typeof raw !== 'string') return '';
+  let cleaned = raw.replace(/```mermaid/g, '').replace(/```/g, '').trim();
+  return cleaned.replace(/([A-Za-z0-9_]+)\[([^\]\r\n]+)\]/g, (match, id, text) => {
+    const trimmed = text.trim();
+    if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+      return match;
+    }
+    const safe = trimmed.replace(/"/g, "'");
+    return `${id}["${safe}"]`;
+  });
+}
+
 function sanitizeBlocks(blocks) {
   if (!Array.isArray(blocks)) return [];
 
@@ -186,41 +205,47 @@ function sanitizeBlocks(blocks) {
     return true;
   }).map(block => ({
     type: block.type,
-    content: block.content.trim(),
+    content: block.type === 'mermaid_graph' ? sanitizeMermaid(block.content) : block.content.trim(),
     metadata: normalizeMetadata(block.metadata),
     support_tags: SUPPORT_TAG_MAP[block.type] || []
   }));
 }
 
-async function generateBlocks(systemPrompt, userPrompt, maxTokens) {
-  try {
-    const completion = await groq.chat.completions.create({
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
-      ],
-      model: "llama-3.3-70b-versatile",
-      temperature: 0.3,
-      max_tokens: maxTokens,
-      response_format: { type: "json_object" }
-    });
+async function createGroqJsonCompletion(messages, temperature, maxTokens) {
+  return groq.chat.completions.create({
+    messages,
+    model: GROQ_MODEL,
+    temperature,
+    // Reasoning models share max_tokens with reasoning tokens, so keep headroom above small block limits.
+    max_tokens: Math.max(maxTokens, 2048),
+    reasoning_effort: "low",
+    response_format: { type: "json_object" }
+  });
+}
 
+async function generateBlocks(systemPrompt, userPrompt, maxTokens) {
+  const baseMessages = [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: userPrompt }
+  ];
+
+  try {
+    const completion = await createGroqJsonCompletion(baseMessages, 0.3, maxTokens);
     const raw = completion.choices[0].message.content;
+
     try {
       const parsed = JSON.parse(raw);
       return parsed.blocks || [];
-    } catch (jsonErr) {
+    } catch {
       console.warn("⚠️ JSON malformed on first attempt. Retrying...");
-      const retry = await groq.chat.completions.create({
-        messages: [
+      const retry = await createGroqJsonCompletion(
+        [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt + "\n\nIMPORTANT: Your previous response had invalid JSON. Return ONLY valid JSON this time." }
         ],
-        model: "llama-3.3-70b-versatile",
-        temperature: 0.2,
-        max_tokens: maxTokens,
-        response_format: { type: "json_object" }
-      });
+        0.2,
+        maxTokens
+      );
       try {
         const retryParsed = JSON.parse(retry.choices[0].message.content);
         return retryParsed.blocks || [];
@@ -236,16 +261,7 @@ async function generateBlocks(systemPrompt, userPrompt, maxTokens) {
       console.warn(`⏳ 429 Rate limited. Waiting ${waitMs / 1000}s before retry...`);
       await sleep(waitMs);
       try {
-        const retryCompletion = await groq.chat.completions.create({
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt }
-          ],
-          model: "llama-3.3-70b-versatile",
-          temperature: 0.3,
-          max_tokens: maxTokens,
-          response_format: { type: "json_object" }
-        });
+        const retryCompletion = await createGroqJsonCompletion(baseMessages, 0.3, maxTokens);
         const retryRaw = retryCompletion.choices[0].message.content;
         const retryParsed = JSON.parse(retryRaw);
         return retryParsed.blocks || [];
@@ -329,6 +345,10 @@ You generate 4 block types: checkpoint, quiz, reflection, challenge.
 Rules:
 - Active recall. Short interactions. Concept focused.
 - Use ONLY the provided sourceText. Do NOT fabricate information.
+- For "checkpoint": 1-2 sentence core factual takeaway to remember.
+- For "quiz": 1 multiple-choice question testing the core concept. Provide 4 options labeled A), B), C), D). Mark the single correct option with an asterisk (*), e.g., *C) Correct Answer. At the end, include "Explanation: <why this answer is correct>".
+- For "reflection": 1 thought-provoking prompt asking the student to reflect on the meaning or implication of the concept.
+- For "challenge": 1 hands-on creative task or inquiry activity (e.g. creating a diagram, timeline, or real-world comparison).
 
 Return ONLY this exact JSON structure:
 {
@@ -423,6 +443,7 @@ Generate exactly 1 Mermaid concept graph.
 
 STRICT RULES:
 - Output ONLY valid Mermaid syntax starting with "graph TD" or "flowchart TD".
+- Always enclose all node text in double quotes: A["Concept Name"] --> B["Sub-concept (details)"]. Never leave unquoted parentheses, colons, or brackets inside node text.
 - NO markdown wrappers. NO explanations. NO descriptions. NO educational text.
 - Raw Mermaid graph code ONLY in the "content" field.
 - Keep it concise: 5-10 nodes maximum.
@@ -432,7 +453,7 @@ Return ONLY this JSON:
   "blocks": [
     {
       "type": "mermaid_graph",
-      "content": "graph TD\\n  A[Concept] --> B[Sub]\\n  B --> C[Detail]",
+      "content": "graph TD\\n  A[\"Concept\"] --> B[\"Sub\"]\\n  B --> C[\"Detail\"]",
       "metadata": { "chunk_size": "medium", "visual_density": "medium", "audio_enabled": false, "gamification": "low", "complexity": 0.4 }
     }
   ]

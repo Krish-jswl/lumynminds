@@ -1,5 +1,4 @@
-import React from 'react';
-import { Target, Zap, AlertCircle, Eye, ShieldAlert } from 'lucide-react';
+import { Target, Zap, Eye, ShieldAlert } from 'lucide-react';
 
 export default function Dashboard({ graphData, studentProfile }) {
   if (!graphData || !graphData.data) return null;

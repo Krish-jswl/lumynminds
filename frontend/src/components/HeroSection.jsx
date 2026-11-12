@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import heroImage from '../assets/hero-children.png';
 
 function HeroSection({ onNavigate }) {
@@ -47,17 +47,15 @@ function HeroSection({ onNavigate }) {
                 <button
                     onClick={() => onNavigate('teacher')}
                     id="hero-cta-educators"
-                    className="group inline-flex items-center gap-2 px-7 py-3.5 bg-brand-orange text-white font-semibold text-body-md rounded-full hover:bg-brand-orange-hover hover:text-brand-heading shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-0.5"
+                    className="group inline-flex items-center gap-2 px-8 py-3.5 bg-brand-orange text-white font-semibold text-body-md rounded-full hover:bg-brand-orange-hover shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-0.5"
                 >
                     For Educators
-                    <span className="transition-transform duration-200 group-hover:translate-x-1">
-                    </span>
                 </button>
 
                 <button
                     onClick={() => onNavigate('student-game')}
                     id="hero-cta-learners"
-                    className="group inline-flex items-center justify-center gap-2 px-7 py-3.5 text-on-surface font-medium text-body-md border border-outline-variant rounded-full bg-transparent hover:border-primary-container hover:bg-surface-container-lowest transition-all duration-300 hover:-translate-y-0.5"
+                    className="group inline-flex items-center justify-center gap-2 px-8 py-3.5 text-on-surface font-semibold text-body-md border border-outline-variant rounded-full bg-white/60 hover:bg-white hover:border-brand-orange hover:text-primary transition-all duration-300 shadow-xs hover:-translate-y-0.5"
                 >
                     For Learners
                     <span className="transition-transform duration-200 group-hover:translate-x-1">
@@ -82,7 +80,7 @@ function HeroSection({ onNavigate }) {
 
             {/* Image Card */}
             <div className="relative w-full max-w-md lg:max-w-lg">
-              <div className="relative bg-white rounded-xl overflow-hidden shadow-soft border border-outline-variant/30">
+              <div className="relative bg-white rounded-3xl overflow-hidden shadow-soft border border-outline-variant/30">
                 <img
                   src={heroImage}
                   alt="Diverse children holding hands and jumping joyfully — representing inclusive, neuro-adaptive learning"

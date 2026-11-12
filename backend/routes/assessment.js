@@ -1,6 +1,8 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 const Student = require('../models/Student');
+const User = require('../models/User');
 
 const clamp = (v) => Math.min(1, Math.max(0, v));
 router.get('/test', (req, res) => {
@@ -13,21 +15,25 @@ router.post('/evaluate', async (req, res) => {
   try {
     const { studentId, activity1, activity2, activity3, global } = req.body;
 
-    const EXPECTED_GLOBAL_TIME = 240000;
+    if (!studentId) {
+      return res.status(400).json({ error: 'studentId is required' });
+    }
+
+    const EXPECTED_GLOBAL_TIME = 120000;
     
     const CompletionScore = clamp(global.completedActivities / Math.max(1, global.requiredActivities));
-    const RandomClickRatio = clamp(global.erraticClicks / Math.max(1, global.totalClicks));
-    const TimeScore = clamp(global.totalTime / EXPECTED_GLOBAL_TIME);
-    const FocusScore = clamp(1 - ((global.windowBlurCount * 0.05) + (global.assessmentRestarts * 0.1)));
+    const RandomClickRatio = clamp((global.erraticClicks || 0) / Math.max(1, global.totalClicks || 1));
+    const TimeScore = clamp((global.totalTime || 60000) / EXPECTED_GLOBAL_TIME);
+    const FocusScore = clamp(1 - (((global.windowBlurCount || 0) * 0.05) + ((global.assessmentRestarts || 0) * 0.1)));
 
     const Validity = clamp(
-      (0.30 * CompletionScore) +
-      (0.25 * TimeScore) +
+      (0.35 * CompletionScore) +
+      (0.20 * Math.max(0.4, TimeScore)) +
       (0.25 * (1 - RandomClickRatio)) +
       (0.20 * FocusScore)
     );
 
-    if (Validity < 0.5) {
+    if (Validity < 0.35) {
       return res.status(200).json({
         status: "REJECTED",
         validity: Validity,
@@ -137,9 +143,21 @@ router.post('/evaluate', async (req, res) => {
       pace_support: GlobalSpeed
     };
 
+    let userRecord = null;
+    if (mongoose.Types.ObjectId.isValid(studentId)) {
+      userRecord = await User.findById(studentId).select('name grade').lean();
+    }
+
     let student = await Student.findOne({ studentId });
     if (!student) {
-      student = new Student({ studentId, name: studentId });
+      student = new Student({
+        studentId,
+        name: userRecord?.name || req.body.name || studentId,
+        grade: userRecord?.grade || req.body.grade || 'All'
+      });
+    } else {
+      if (userRecord?.name) student.name = userRecord.name;
+      if (userRecord?.grade) student.grade = userRecord.grade;
     }
 
     if (student.assessmentCount === 0) {
