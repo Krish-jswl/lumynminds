@@ -1,5 +1,5 @@
 // Tracked by Git
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import FileUpload from '../components/FileUpload';
 import { BrainCircuit } from 'lucide-react';

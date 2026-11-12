@@ -61,6 +61,11 @@ const studentSchema = new mongoose.Schema(
       default: ''
     },
 
+    grade: {
+      type: String,
+      default: 'All'
+    },
+
     assessmentCount: {
       type: Number,
       default: 0

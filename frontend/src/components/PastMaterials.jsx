@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Search, Share2 } from 'lucide-react';
 
 /* ── Mock Data ── */
@@ -80,14 +80,13 @@ function PastMaterials() {
           {filteredMaterials.map((material) => (
             <article
               key={material.id}
-              className="bg-surface-container-lowest rounded-[24px] border border-outline-variant overflow-hidden flex flex-col group hover:border-primary/30 hover:-translate-y-1 transition-all duration-300"
-              style={{ boxShadow: '0 25px 50px -12px rgba(0,0,0,0.05)' }}
+              className="bg-white rounded-3xl border border-outline-variant/40 overflow-hidden flex flex-col group hover:border-brand-orange/40 hover:-translate-y-1 transition-all duration-300 shadow-soft"
             >
               <div className="p-6 flex flex-col flex-grow">
                 {/* Grade Badge */}
                 <div className="flex items-start mb-4 justify-end">
-                  <div className="bg-primary/10 backdrop-blur-sm px-4 py-1 rounded-full">
-                    <span className="text-primary font-label-sm">Grade {material.grade}</span>
+                  <div className="bg-primary/10 border border-primary/20 px-4 py-1 rounded-full">
+                    <span className="text-primary font-semibold text-xs">Grade {material.grade}</span>
                   </div>
                 </div>
 
@@ -95,12 +94,12 @@ function PastMaterials() {
                 <h3 className="font-h3 text-h3 text-on-surface mb-1">{material.title}</h3>
 
                 {/* Actions */}
-                <div className="mt-10 flex flex-col gap-2">
-                  <button className="w-full bg-primary text-on-primary py-4 rounded-xl font-label-md flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all">
-                    <Share2 className="w-5 h-5" strokeWidth={2} />
+                <div className="mt-8 flex flex-col gap-2.5">
+                  <button className="w-full bg-brand-orange text-white py-3.5 rounded-full font-semibold text-sm flex items-center justify-center gap-2 hover:bg-brand-orange-hover shadow-card transition-all">
+                    <Share2 className="w-4 h-4" strokeWidth={2} />
                     View Knowledge Graph
                   </button>
-                  <button className="w-full border border-outline-variant text-on-surface-variant py-4 rounded-xl font-label-md flex items-center justify-center gap-2 hover:bg-surface-container-low active:scale-95 transition-all">
+                  <button className="w-full border border-outline-variant text-on-surface bg-white py-3.5 rounded-full font-semibold text-sm flex items-center justify-center gap-2 hover:bg-surface-container-low transition-all shadow-xs">
                     View Learning Block
                   </button>
                 </div>

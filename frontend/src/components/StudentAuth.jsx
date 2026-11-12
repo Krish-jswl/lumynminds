@@ -1,5 +1,15 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { User, Mail, BookOpen, GraduationCap, Lock, X, AlertCircle, Loader2 } from 'lucide-react';
+
+function ErrorBanner({ error }) {
+  if (!error) return null;
+  return (
+    <div className="mb-4 p-3 bg-error/10 border border-error/20 rounded-lg flex items-center gap-2 text-error text-[13px] font-medium">
+      <AlertCircle className="w-4 h-4 shrink-0" />
+      <p>{error}</p>
+    </div>
+  );
+}
 
 function StudentAuth({ onClose, onSuccess }) {
   const [activeTab, setActiveTab] = useState('signup');
@@ -81,33 +91,26 @@ function StudentAuth({ onClose, onSuccess }) {
 
   /* ── shared input classes ── */
   const inputBase =
-    'w-full pl-12 pr-4 py-3.5 bg-white border rounded-lg text-body-md text-on-surface placeholder:text-[#e3c9bf] focus:outline-none transition-all duration-200';
+    'w-full pl-12 pr-4 py-3.5 bg-white border rounded-xl text-body-md text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none transition-all duration-200';
   const inputNormal =
-    'border-outline-variant focus:border-primary-container focus:ring-2 focus:ring-primary-container/20';
+    'border-outline-variant focus:border-brand-orange focus:ring-2 focus:ring-brand-orange/20';
 
   /* ── shared icon classes ── */
   const iconClass = 'absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant';
 
-  const ErrorBanner = () => error ? (
-    <div className="mb-4 p-3 bg-error/10 border border-error/20 rounded-lg flex items-center gap-2 text-error text-[13px] font-medium">
-      <AlertCircle className="w-4 h-4 shrink-0" />
-      <p>{error}</p>
-    </div>
-  ) : null;
-
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-on-surface/10 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-on-surface/20 backdrop-blur-sm" onClick={onClose} />
 
       <div className="fixed inset-0 z-50 flex items-center justify-center p-6 pointer-events-none">
-        <div className="bg-surface-container-lowest w-full max-w-[550px] max-h-[90vh] rounded-[24px] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.06)] border border-outline-variant/40 pointer-events-auto overflow-hidden flex flex-col">
+        <div className="bg-surface-container-lowest w-full max-w-[550px] max-h-[90vh] rounded-3xl shadow-soft border border-outline-variant/40 pointer-events-auto overflow-hidden flex flex-col">
 
           {/* Tabs */}
           <div className="flex bg-surface-container-low border-b border-outline-variant/50 shrink-0">
             <button
               onClick={() => handleTabSwitch('signup')}
               className={`flex-1 py-5 text-center text-[14px] font-semibold tracking-wide border-b-2 transition-all duration-300 ${
-                activeTab === 'signup' ? 'border-primary-container text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface'
+                activeTab === 'signup' ? 'border-brand-orange text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface'
               }`}
             >
               Sign Up
@@ -115,7 +118,7 @@ function StudentAuth({ onClose, onSuccess }) {
             <button
               onClick={() => handleTabSwitch('login')}
               className={`flex-1 py-5 text-center text-[14px] font-semibold tracking-wide border-b-2 transition-all duration-300 ${
-                activeTab === 'login' ? 'border-primary-container text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface'
+                activeTab === 'login' ? 'border-brand-orange text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface'
               }`}
             >
               Login
@@ -133,7 +136,7 @@ function StudentAuth({ onClose, onSuccess }) {
                   Create your account to start your personalized journey.
                 </p>
 
-                <ErrorBanner />
+                <ErrorBanner error={error} />
 
                 <form className="space-y-5" onSubmit={handleSubmit}>
                   <div>
@@ -177,7 +180,7 @@ function StudentAuth({ onClose, onSuccess }) {
                     </div>
                   </div>
 
-                  <button type="submit" disabled={!canSubmit || isLoading} className={`w-full py-3.5 rounded-lg text-[15px] font-semibold mt-2 transition-all duration-300 flex items-center justify-center gap-2 ${canSubmit && !isLoading ? 'bg-primary-container text-white hover:bg-primary shadow-sm hover:shadow-md' : 'bg-surface-container-high text-on-surface-variant/50 cursor-not-allowed'}`}>
+                  <button type="submit" disabled={!canSubmit || isLoading} className={`w-full py-4 rounded-full text-[15px] font-semibold mt-2 transition-all duration-300 flex items-center justify-center gap-2 ${canSubmit && !isLoading ? 'bg-brand-orange text-white hover:bg-brand-orange-hover shadow-card hover:-translate-y-0.5' : 'bg-surface-container-high text-on-surface-variant/50 cursor-not-allowed'}`}>
                     {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Create Account'}
                   </button>
                 </form>
@@ -194,7 +197,7 @@ function StudentAuth({ onClose, onSuccess }) {
                   Enter your email to resume your learning path.
                 </p>
 
-                <ErrorBanner />
+                <ErrorBanner error={error} />
 
                 <form className="space-y-5" onSubmit={handleSubmit}>
                   <div>
@@ -220,7 +223,7 @@ function StudentAuth({ onClose, onSuccess }) {
                     <label htmlFor="remember" className="text-[13px] text-on-surface-variant cursor-pointer select-none">Remember me on this device</label>
                   </div>
 
-                  <button type="submit" disabled={!canSubmit || isLoading} className={`w-full py-3.5 rounded-lg text-[15px] font-semibold mt-2 transition-all duration-300 flex items-center justify-center gap-2 ${canSubmit && !isLoading ? 'bg-primary-container text-white hover:bg-primary shadow-sm hover:shadow-md' : 'bg-surface-container-high text-on-surface-variant/50 cursor-not-allowed'}`}>
+                  <button type="submit" disabled={!canSubmit || isLoading} className={`w-full py-4 rounded-full text-[15px] font-semibold mt-2 transition-all duration-300 flex items-center justify-center gap-2 ${canSubmit && !isLoading ? 'bg-brand-orange text-white hover:bg-brand-orange-hover shadow-card hover:-translate-y-0.5' : 'bg-surface-container-high text-on-surface-variant/50 cursor-not-allowed'}`}>
                     {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Login'}
                   </button>
                 </form>

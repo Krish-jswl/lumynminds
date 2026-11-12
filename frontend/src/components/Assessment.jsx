@@ -1,111 +1,314 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { BrainCircuit, CheckCircle2, Loader2, BookOpen, Eye, Headphones, Trophy, Zap, Star, ArrowRight, Award, Flame, PartyPopper, Play, Pause, Square } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import {
+  BrainCircuit, CheckCircle2, Loader2, BookOpen, Eye, Headphones,
+  Zap, Star, ArrowRight, Flame, Play,
+  Pause, RotateCcw, Volume2, Sparkles, Bell, MessageSquare
+} from 'lucide-react';
 
 const API_URL = 'http://localhost:5000/api/assessment/evaluate';
 const IDLE_THRESHOLD = 5000;
-const MIN_READING_TIME = 15000;
 const REQUIRED_TARGETS = 5;
 const RAPID_CLICK_WINDOW = 1000;
 const RAPID_CLICK_THRESHOLD = 4;
 
+/* ── Activity 1 Text & Vocabulary (Clean + Cluttered) ── */
+/* All genuine space/astronomy/solar-system terms are valid targets (isTarget: true).
+   Terrestrial ocean/industrial technologies are distractors (isDistractor: true).
+   Every token in the paragraph is interactive with identical cursor and hover styling to eliminate pointer leakage. */
 const SHARED_PARAGRAPHS = [
   {
     id: 'p1',
-    segments: [
-      { text: 'The universe is vast and filled with billions of galaxies. Our home galaxy is called the ', phrase: false },
-      { text: 'Milky Way', phrase: true, isTarget: true, phraseId: 'milky_way' },
-      { text: '. It contains our solar system, which is held together by the massive gravitational pull of the ', phrase: false },
-      { text: 'Sun', phrase: true, isTarget: true, phraseId: 'sun' },
-      { text: '.', phrase: false }
+    tokens: [
+      { text: 'The', isWord: true },
+      { text: 'universe', isTarget: true, phraseId: 'universe', label: 'Cosmic Domain' },
+      { text: 'is', isWord: true },
+      { text: 'vast', isWord: true },
+      { text: 'and', isWord: true },
+      { text: 'filled', isWord: true },
+      { text: 'with', isWord: true },
+      { text: 'billions', isWord: true },
+      { text: 'of', isWord: true },
+      { text: 'galaxies.', isTarget: true, phraseId: 'galaxies', label: 'Star Systems' },
+      { text: 'Our', isWord: true },
+      { text: 'home', isWord: true },
+      { text: 'spiral', isWord: true },
+      { text: 'galaxy', isTarget: true, phraseId: 'galaxy_spiral', label: 'Spiral Galaxy' },
+      { text: 'is', isWord: true },
+      { text: 'the', isWord: true },
+      { text: 'Milky Way.', isTarget: true, phraseId: 'milky_way', label: 'Home Galaxy' },
+      { text: 'It', isWord: true },
+      { text: 'holds', isWord: true },
+      { text: 'our', isWord: true },
+      { text: 'entire', isWord: true },
+      { text: 'solar system', isTarget: true, phraseId: 'solar_system', label: 'Planetary System' },
+      { text: 'together', isWord: true },
+      { text: 'through', isWord: true },
+      { text: 'the', isWord: true },
+      { text: 'immense', isWord: true },
+      { text: 'gravitational pull', isTarget: true, phraseId: 'grav_pull', label: 'Cosmic Force' },
+      { text: 'of', isWord: true },
+      { text: 'the', isWord: true },
+      { text: 'Sun,', isTarget: true, phraseId: 'sun', label: 'Central Star' },
+      { text: 'which', isWord: true },
+      { text: 'provides', isWord: true },
+      { text: 'heat', isWord: true },
+      { text: 'and', isWord: true },
+      { text: 'light.', isWord: true }
     ],
   },
   {
     id: 'p2',
-    segments: [
-      { text: 'Earth is perfectly positioned to support life. But scientists are also very interested in exploring ', phrase: false },
-      { text: 'Mars', phrase: true, isTarget: true, phraseId: 'mars' },
-      { text: '. It is known as the Red Planet and has a landscape full of craters and extinct volcanoes. Rovers use advanced ', phrase: false },
-      { text: 'Telescope Lenses', phrase: true, isTarget: false, phraseId: 'd_telescope' },
-      { text: ' and cameras to study its rocky surface.', phrase: false }
+    tokens: [
+      { text: 'Earth', isTarget: true, phraseId: 'earth', label: 'Habitable Planet' },
+      { text: 'is', isWord: true },
+      { text: 'positioned', isWord: true },
+      { text: 'in', isWord: true },
+      { text: 'the', isWord: true },
+      { text: 'habitable', isWord: true },
+      { text: 'zone.', isWord: true },
+      { text: 'Robotic', isWord: true },
+      { text: 'probes', isWord: true },
+      { text: 'have', isWord: true },
+      { text: 'also', isWord: true },
+      { text: 'explored', isWord: true },
+      { text: 'the', isWord: true },
+      { text: 'dusty', isWord: true },
+      { text: 'deserts', isWord: true },
+      { text: 'of', isWord: true },
+      { text: 'Mars,', isTarget: true, phraseId: 'mars', label: 'Red Planet' },
+      { text: 'searching', isWord: true },
+      { text: 'for', isWord: true },
+      { text: 'traces', isWord: true },
+      { text: 'of', isWord: true },
+      { text: 'ancient', isWord: true },
+      { text: 'water.', isWord: true },
+      { text: 'Unlike', isWord: true },
+      { text: 'deep-sea', isWord: true },
+      { text: 'explorers', isWord: true },
+      { text: 'using', isWord: true },
+      { text: 'Submarine Sonar,', isDistractor: true, phraseId: 'd_sonar', label: 'Earth Ocean Tech', hint: 'Submarine Sonar is Earth ocean technology — look for stars, planets, and space concepts!' },
+      { text: 'planetary', isTarget: true, phraseId: 'planetary', label: 'Planetary Science' },
+      { text: 'rovers', isWord: true },
+      { text: 'rely', isWord: true },
+      { text: 'on', isWord: true },
+      { text: 'spectrometers', isWord: true },
+      { text: 'and', isWord: true },
+      { text: 'high-resolution', isWord: true },
+      { text: 'cameras.', isWord: true }
     ],
   },
   {
     id: 'p3',
-    segments: [
-      { text: 'Beyond the inner planets lies the largest planet in our solar system, ', phrase: false },
-      { text: 'Jupiter', phrase: true, isTarget: true, phraseId: 'jupiter' },
-      { text: '. It is a massive gas giant famous for a swirling storm called the Great Red Spot. Between the inner and outer planets sits the ', phrase: false },
-      { text: 'Asteroid Belt', phrase: true, isTarget: false, phraseId: 'd_asteroid_belt' },
-      { text: ', a thick ring of rocky debris.', phrase: false }
+    tokens: [
+      { text: 'Beyond', isWord: true },
+      { text: 'the', isWord: true },
+      { text: 'rocky', isWord: true },
+      { text: 'terrestrial', isWord: true },
+      { text: 'planets', isTarget: true, phraseId: 'planets', label: 'Terrestrial Planets' },
+      { text: 'lies', isWord: true },
+      { text: 'the', isWord: true },
+      { text: 'gas giant', isTarget: true, phraseId: 'gas_giant', label: 'Gas Giant' },
+      { text: 'Jupiter,', isTarget: true, phraseId: 'jupiter', label: 'Largest Planet' },
+      { text: 'crowned', isWord: true },
+      { text: 'by', isWord: true },
+      { text: 'its', isWord: true },
+      { text: 'swirling', isWord: true },
+      { text: 'storm', isWord: true },
+      { text: 'called', isWord: true },
+      { text: 'the', isWord: true },
+      { text: 'Great Red Spot.', isTarget: true, phraseId: 'great_red_spot', label: 'Cosmic Jovian Storm' },
+      { text: 'In', isWord: true },
+      { text: 'the', isWord: true },
+      { text: 'gap', isWord: true },
+      { text: 'between', isWord: true },
+      { text: 'Mars', isTarget: true, phraseId: 'mars_2', label: 'Planet Mars' },
+      { text: 'and', isWord: true },
+      { text: 'Jupiter', isTarget: true, phraseId: 'jupiter_2', label: 'Planet Jupiter' },
+      { text: 'lies', isWord: true },
+      { text: 'the', isWord: true },
+      { text: 'dense', isWord: true },
+      { text: 'Asteroid Belt,', isTarget: true, phraseId: 'asteroid_belt', label: 'Cosmic Belt' },
+      { text: 'composed', isWord: true },
+      { text: 'of', isWord: true },
+      { text: 'millions', isWord: true },
+      { text: 'of', isWord: true },
+      { text: 'orbiting', isTarget: true, phraseId: 'orbiting', label: 'Orbital Motion' },
+      { text: 'rock', isWord: true },
+      { text: 'fragments.', isWord: true }
     ],
   },
   {
     id: 'p4',
-    segments: [
-      { text: 'All planets and moons are kept in their steady orbits by an invisible force. This force is called ', phrase: false },
-      { text: 'Gravity', phrase: true, isTarget: true, phraseId: 'gravity' },
-      { text: '. Without it, planets would float away into deep, freezing space. It is the exact same pull that causes a ', phrase: false },
-      { text: 'Meteor Shower', phrase: true, isTarget: false, phraseId: 'd_meteor' },
-      { text: ' to fall toward our atmosphere.', phrase: false }
+    tokens: [
+      { text: 'Every', isWord: true },
+      { text: 'planet,', isTarget: true, phraseId: 'planet_single', label: 'Celestial Planet' },
+      { text: 'moon,', isTarget: true, phraseId: 'moon', label: 'Natural Satellite' },
+      { text: 'and', isWord: true },
+      { text: 'comet', isTarget: true, phraseId: 'comet_single', label: 'Icy Celestial Body' },
+      { text: 'is', isWord: true },
+      { text: 'locked', isWord: true },
+      { text: 'into', isWord: true },
+      { text: 'its', isWord: true },
+      { text: 'predictable', isWord: true },
+      { text: 'orbital path', isTarget: true, phraseId: 'orbital_path', label: 'Cosmic Trajectory' },
+      { text: 'by', isWord: true },
+      { text: 'Gravity.', isTarget: true, phraseId: 'gravity', label: 'Fundamental Cosmic Force' },
+      { text: 'When', isWord: true },
+      { text: 'microscopic', isWord: true },
+      { text: 'space debris', isTarget: true, phraseId: 'space_debris', label: 'Cosmic Debris' },
+      { text: 'collides', isWord: true },
+      { text: 'with', isWord: true },
+      { text: 'Earth’s', isTarget: true, phraseId: 'earths', label: 'Earth' },
+      { text: 'upper', isWord: true },
+      { text: 'atmosphere,', isTarget: true, phraseId: 'atmosphere', label: 'Planetary Atmosphere' },
+      { text: 'friction', isWord: true },
+      { text: 'creates', isWord: true },
+      { text: 'a', isWord: true },
+      { text: 'glowing', isWord: true },
+      { text: 'Meteor Shower,', isTarget: true, phraseId: 'meteor_shower', label: 'Cosmic Phenomenon' },
+      { text: 'burning', isWord: true },
+      { text: 'brightly', isWord: true },
+      { text: 'across', isWord: true },
+      { text: 'the', isWord: true },
+      { text: 'night', isWord: true },
+      { text: 'sky.', isWord: true }
     ],
   },
   {
     id: 'p5',
-    segments: [
-      { text: 'Space exploration has taught us a lot about our neighborhood. Sometimes, a freezing ', phrase: false },
-      { text: 'Comet', phrase: true, isTarget: false, phraseId: 'd_comet' },
-      { text: ' will streak across the sky, leaving a glowing trail of ice and dust behind it. Even though space is dangerous, learning about it helps us understand our own world.', phrase: false }
+    tokens: [
+      { text: 'Farther', isWord: true },
+      { text: 'out', isWord: true },
+      { text: 'in', isWord: true },
+      { text: 'the', isWord: true },
+      { text: 'frozen', isWord: true },
+      { text: 'Kuiper Belt,', isTarget: true, phraseId: 'kuiper_belt', label: 'Outer Solar System Belt' },
+      { text: 'an', isWord: true },
+      { text: 'icy', isWord: true },
+      { text: 'Comet', isTarget: true, phraseId: 'comet_p5', label: 'Celestial Body' },
+      { text: 'swings', isWord: true },
+      { text: 'toward', isWord: true },
+      { text: 'the', isWord: true },
+      { text: 'inner', isWord: true },
+      { text: 'solar system,', isTarget: true, phraseId: 'solar_system_p5', label: 'Solar System' },
+      { text: 'outgassing', isWord: true },
+      { text: 'vapor', isWord: true },
+      { text: 'into', isWord: true },
+      { text: 'a', isWord: true },
+      { text: 'luminous', isWord: true },
+      { text: 'tail.', isWord: true },
+      { text: 'Studying', isWord: true },
+      { text: 'these', isWord: true },
+      { text: 'cosmic relics', isTarget: true, phraseId: 'cosmic_relics', label: 'Cosmic Relics' },
+      { text: 'does', isWord: true },
+      { text: 'not', isWord: true },
+      { text: 'require', isWord: true },
+      { text: 'a', isWord: true },
+      { text: 'Steam Generator,', isDistractor: true, phraseId: 'd_generator', label: 'Industrial Machine', hint: 'A Steam Generator is an Earth industrial machine — look for celestial bodies and cosmic forces!' },
+      { text: 'but', isWord: true },
+      { text: 'space telescopes', isTarget: true, phraseId: 'space_telescopes', label: 'Astronomical Instruments' },
+      { text: 'and', isWord: true },
+      { text: 'orbital', isTarget: true, phraseId: 'orbital_p5', label: 'Orbital Science' },
+      { text: 'spectroscopy.', isTarget: true, phraseId: 'spectroscopy', label: 'Cosmic Light Analysis' }
     ],
   }
 ];
 
-const TRUE_TARGETS = new Set(['milky_way', 'sun', 'mars', 'jupiter', 'gravity']);
-
-const CLUTTER_SIDEBAR = [
-  '🚀 Fun Fact: A day on Venus is longer than an entire year on Venus!',
-  '🌌 Did you know? Space is completely silent because there is no air.',
-  '⭐ The closest star to Earth (besides our Sun) is Proxima Centauri.',
-  '🌕 Neil Armstrong was the very first person to walk on the moon in 1969.',
+/* Realistic School/Digital Classroom Distractions for Cluttered Phase */
+const CLUTTER_NOTIFICATIONS = [
+  { icon: Bell, title: 'Classroom Alert', text: 'Science lab worksheets due by Friday at 4:00 PM.', color: 'border-amber-200 bg-amber-50 text-amber-800' },
+  { icon: MessageSquare, title: 'Class Chat (3 new)', text: 'Liam: "Are we testing paragraph 3 or 4 right now?"', color: 'border-outline-variant/60 bg-surface-container-low text-on-surface' },
+  { icon: Sparkles, title: 'Weekly Challenge', text: 'School Science Olympiad signups open this week!', color: 'border-primary/20 bg-surface-container text-primary' },
+  { icon: Zap, title: 'Live Update', text: 'Band practice room moved to Room 204.', color: 'border-emerald-200 bg-emerald-50 text-emerald-800' },
 ];
 
-const LUMA_TEXT = `Luma Crystals are synthetic energy structures developed for high-density power storage. Each crystal contains three primary components that work together to capture, channel, and regulate energy flow.
+/* ── Activity 2 Multi-Modal Content ── */
+const LUMA_TEXT = `The Luma Crystal Energy System is a synthetic clean-power storage architecture built for high-demand scientific facilities. It operates through three core synchronized components:
 
-The Core Chamber sits at the center of every Luma Crystal. It is a dense, spherical cavity where raw energy is compressed and stored. The Core Chamber can hold up to 4,700 terajoules of energy in a space smaller than a marble. Energy enters the Core Chamber through intake valves and is locked in place by a resonance field.
+1. The Core Chamber:
+The dense spherical cavity located at the exact center of the crystal. It compresses raw resonance energy into a stable quantum state, storing up to 4,700 terajoules in a marble-sized volume. Energy enters through magnetic intake valves and remains trapped inside a resonance containment field.
 
-Photon Channels are thin, luminescent pathways that radiate outward from the Core Chamber like the spokes of a wheel. These channels carry energy from the Core Chamber to external devices. Each Luma Crystal contains between 12 and 36 Photon Channels, depending on its class. The channels glow faintly blue when active, indicating energy transfer is occurring.
+2. Photon Channels:
+A network of luminescent micro-pathways radiating outward from the Core Chamber like wheel spokes. When active, these channels glow a gentle cobalt blue, conducting power directly to external instruments and sensors without conductive wire loss.
 
-Cooling Rings are concentric bands that encircle the Core Chamber. Their primary function is thermal regulation — they prevent the crystal from overheating during high-output energy transfer. Without Cooling Rings, the Core Chamber would reach critical temperatures within seconds and destabilize. Each Cooling Ring absorbs excess heat and redistributes it across the crystal surface as harmless infrared radiation.
+3. Concentric Cooling Rings:
+Three layered thermal-absorption bands encircling the Core Chamber. High-volume energy transfer produces extreme thermal friction. The Cooling Rings absorb this excess heat and radiate it harmlessly across the surface as low-frequency infrared energy, preventing critical overheating and crystal destabilization.`;
 
-The three components work in harmony: the Core Chamber stores energy, Photon Channels distribute it, and Cooling Rings keep the entire system thermally stable.`;
+const LUMA_AUDIO_SCRIPT = `Welcome to the Luma Crystal Energy System briefing. 
+Picture a tiny glowing marble resting in the center of a glass sphere. That central marble is the Core Chamber — the heart of the system where all raw electrical energy is compressed and stored.
 
-const LUMA_AUDIO_SCRIPT = `Picture a tiny glowing marble sitting in the palm of your hand. That marble is the Core Chamber of a Luma Crystal — the place where all energy is stored. It can hold an enormous amount of power, locked in place by a special resonance field.
+Radiating outward from this Core Chamber are thin, glowing blue lines called Photon Channels. Their job is simple: they act like light highways, carrying energy directly to external devices without any power loss.
 
-Now imagine thin glowing lines stretching outward from that marble, like rays of light from a tiny sun. Those are the Photon Channels. They carry energy from the Core Chamber to whatever device needs power. When energy is flowing, the channels glow a soft blue color.
+When all that energy flows, it generates intense heat. To prevent the crystal from melting or overheating, three concentric Cooling Rings encircle the Core Chamber. These rings absorb thermal spikes and release them as harmless infrared glow. 
 
-But here's the problem — all that energy creates heat. A lot of heat. That's where the Cooling Rings come in. They wrap around the Core Chamber in layers, like the rings of a tree trunk. Their job is to absorb the excess heat before the crystal overheats. They convert that heat into harmless infrared radiation that spreads across the surface.
-
-So to summarize: the Core Chamber stores the energy, the Photon Channels move it where it needs to go, and the Cooling Rings make sure nothing melts in the process. All three parts must work together for the crystal to function safely.`;
+Remember these three parts: Core Chamber stores energy, Photon Channels transport it, and Cooling Rings prevent overheating.`;
 
 const QUIZ_QUESTIONS = [
-  { q: 'Where is energy stored in a Luma Crystal?', options: ['Cooling Ring', 'Core Chamber', 'Photon Channel', 'Reactor Pod'], answer: 1 },
-  { q: 'What is the function of Photon Channels?', options: ['Store energy', 'Regulate temperature', 'Distribute energy to devices', 'Generate resonance'], answer: 2 },
-  { q: 'What do Cooling Rings prevent?', options: ['Energy loss', 'Light emission', 'Crystal overheating', 'Channel blockage'], answer: 2 },
+  {
+    q: 'Where is raw energy compressed and stored inside a Luma Crystal?',
+    options: ['Cooling Rings', 'Core Chamber', 'Photon Channels', 'Intake Valve'],
+    answer: 1,
+    explanation: 'The Core Chamber sits at the center and compresses raw energy up to 4,700 terajoules.'
+  },
+  {
+    q: 'What is the primary role of the Photon Channels?',
+    options: ['Absorb excess heat', 'Lock the resonance field', 'Distribute energy to external devices', 'Regulate crystal temperature'],
+    answer: 2,
+    explanation: 'Photon Channels radiate outward like spokes to deliver power directly to devices.'
+  },
+  {
+    q: 'What critical danger do the concentric Cooling Rings prevent?',
+    options: ['Light leakage', 'Thermal friction & crystal overheating', 'Voltage leakage', 'Magnetic valve blockage'],
+    answer: 1,
+    explanation: 'Without Cooling Rings, extreme thermal friction would overheat and destabilize the Core Chamber.'
+  },
 ];
 
+/* ── Activity 3 Conceptual & Motivational Challenges ── */
 const ANALOGY_QUESTIONS = [
-  { prompt: 'Atom is to Solar System as...', options: ['Nucleus is to Sun', 'Electron is to Planet mass', 'Proton is to Comet', 'Neutron is to Asteroid belt'], answer: 0 },
-  { prompt: 'DNA is to Blueprint as...', options: ['Cell is to Building', 'Gene is to Instruction', 'Protein is to Architect', 'Chromosome is to Foundation'], answer: 1 },
-  { prompt: 'Electric Current is to Water Flow as...', options: ['Voltage is to Water Pressure', 'Resistance is to Pipe Color', 'Ampere is to Water Temperature', 'Circuit is to Ocean'], answer: 0 },
+  {
+    prompt: 'Atom is to Solar System as...',
+    options: [
+      'Nucleus is to Sun (Central mass orbited by smaller bodies)',
+      'Electron is to Planet mass (Measure of weight)',
+      'Proton is to Space vacuum (Empty distance)',
+      'Neutron is to Asteroid belt (Outer ring)'
+    ],
+    answer: 0
+  },
+  {
+    prompt: 'Cell Membrane is to City Border as...',
+    options: [
+      'Ribosome is to Highway (Transportation line)',
+      'Nucleus is to City Hall (Central control center)',
+      'Cytoplasm is to Skyscraper (Building structure)',
+      'Mitochondria is to Park (Relaxation zone)'
+    ],
+    answer: 1
+  },
+  {
+    prompt: 'Electric Current is to Water Flow through a pipe as...',
+    options: [
+      'Voltage is to Water Pressure (Force pushing the flow)',
+      'Resistance is to Water Color (Visual appearance)',
+      'Wire is to Riverbank (Earth formation)',
+      'Battery is to Water Filter (Purification system)'
+    ],
+    answer: 0
+  },
 ];
 
-const SYMBOL_QUESTIONS_NORMAL = [
-  { prompt: 'Which sequence matches: ★ ▲ ■ ◆ ?', options: ['★ ▲ ■ ◆', '▲ ★ ◆ ■', '■ ◆ ★ ▲', '◆ ■ ▲ ★'], answer: 0 },
-  { prompt: 'Which sequence matches: ◯ ✦ △ ▢ ?', options: ['✦ ◯ ▢ △', '◯ ✦ ▢ △', '◯ ✦ △ ▢', '△ ▢ ◯ ✦'], answer: 2 },
+/* Pattern matching for Baseline vs Reward motivation */
+const PATTERN_TASKS_BASELINE = [
+  { prompt: 'Match the target symbol sequence: ★ ▲ ■ ◆', options: ['★ ▲ ■ ◆', '▲ ★ ◆ ■', '■ ◆ ★ ▲', '◆ ■ ▲ ★'], answer: 0 },
+  { prompt: 'Match the target symbol sequence: ◯ ✦ △ ▢', options: ['✦ ◯ ▢ △', '◯ ✦ ▢ △', '◯ ✦ △ ▢', '△ ▢ ◯ ✦'], answer: 2 },
+  { prompt: 'Match the target symbol sequence: ⬟ ▶ ◈ ✖', options: ['⬟ ▶ ◈ ✖', '▶ ⬟ ✖ ◈', '◈ ✖ ⬟ ▶', '✖ ◈ ▶ ⬟'], answer: 0 },
 ];
 
-const SYMBOL_QUESTIONS_REWARD = [
-  { prompt: 'Which sequence matches: ▼ ◇ ● ✖ ?', options: ['◇ ▼ ✖ ●', '▼ ◇ ● ✖', '● ✖ ▼ ◇', '✖ ● ◇ ▼'], answer: 1 },
-  { prompt: 'Which sequence matches: ✚ ⬟ ◈ ▶ ?', options: ['⬟ ✚ ▶ ◈', '✚ ◈ ⬟ ▶', '✚ ⬟ ◈ ▶', '▶ ◈ ⬟ ✚'], answer: 2 },
+const PATTERN_TASKS_REWARD = [
+  { prompt: 'Match the target symbol sequence: ▼ ◇ ● ✖', options: ['◇ ▼ ✖ ●', '▼ ◇ ● ✖', '● ✖ ▼ ◇', '✖ ● ◇ ▼'], answer: 1 },
+  { prompt: 'Match the target symbol sequence: ✚ ⬟ ◈ ▶', options: ['⬟ ✚ ▶ ◈', '✚ ◈ ⬟ ▶', '✚ ⬟ ◈ ▶', '▶ ◈ ⬟ ✚'], answer: 2 },
+  { prompt: 'Match the target symbol sequence: ✦ ◯ ■ ★', options: ['■ ★ ✦ ◯', '✦ ◯ ■ ★', '◯ ✦ ★ ■', '★ ■ ◯ ✦'], answer: 1 },
 ];
 
 function getRestartCount() {
@@ -122,200 +325,271 @@ function incrementRestartCount() {
   } catch { return 0; }
 }
 
+/* ── Interactive SVG Diagram for Activity 2 ── */
 function LumaCrystalSVG({ onInteraction }) {
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [activeHighlight, setActiveHighlight] = useState(null);
   const interactionsRef = useRef(0);
 
-  const handleClick = (e) => {
-    e.stopPropagation();
+  const registerInteraction = (type) => {
     interactionsRef.current++;
-    if (onInteraction) onInteraction(interactionsRef.current);
+    setActiveHighlight(type);
+    if (onInteraction) onInteraction(interactionsRef.current, false);
   };
 
-  const handleZoomIn = (e) => {
-    e.stopPropagation();
-    setZoomLevel(z => Math.min(z + 0.25, 2));
+  const handleZoom = (delta) => {
     interactionsRef.current++;
-    if (onInteraction) onInteraction(interactionsRef.current, zoomLevel + 0.25 > zoomLevel ? 1 : 0);
-  };
-
-  const handleZoomOut = (e) => {
-    e.stopPropagation();
-    setZoomLevel(z => Math.max(z - 0.25, 0.5));
-    interactionsRef.current++;
-    if (onInteraction) onInteraction(interactionsRef.current, 0);
+    setZoomLevel(z => Math.max(0.75, Math.min(1.75, z + delta)));
+    if (onInteraction) onInteraction(interactionsRef.current, true);
   };
 
   return (
-    <div data-interactive="true">
-      <div className="flex gap-2 mb-3">
-        <button data-interactive="true" onClick={handleZoomIn} className="px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-medium text-slate-700">Zoom In +</button>
-        <button data-interactive="true" onClick={handleZoomOut} className="px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-medium text-slate-700">Zoom Out −</button>
-        <span className="text-xs text-slate-400 self-center ml-2">{Math.round(zoomLevel * 100)}%</span>
+    <div data-interactive="true" className="space-y-3 select-none">
+      <div className="flex items-center justify-between bg-surface-container-low p-2.5 rounded-2xl border border-outline-variant/40">
+        <div className="flex gap-2">
+          <button data-interactive="true" onClick={() => handleZoom(0.25)}
+            className="px-4 py-1.5 bg-white border border-outline-variant hover:bg-surface-container rounded-full text-xs font-semibold text-on-surface shadow-xs transition-all">
+            Zoom In +
+          </button>
+          <button data-interactive="true" onClick={() => handleZoom(-0.25)}
+            className="px-4 py-1.5 bg-white border border-outline-variant hover:bg-surface-container rounded-full text-xs font-semibold text-on-surface shadow-xs transition-all">
+            Zoom Out −
+          </button>
+          <button data-interactive="true" onClick={() => { setZoomLevel(1); setActiveHighlight(null); }}
+            className="px-4 py-1.5 bg-white border border-outline-variant hover:bg-surface-container rounded-full text-xs font-semibold text-on-surface-variant shadow-xs transition-all">
+            Reset View
+          </button>
+        </div>
+        <div className="text-xs font-medium text-on-surface-variant pr-2">
+          Scale: <strong className="text-on-surface">{Math.round(zoomLevel * 100)}%</strong>
+        </div>
       </div>
-      <div className="overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-4" style={{ maxHeight: '500px' }}>
-        <svg viewBox="0 0 500 520" width={500 * zoomLevel} height={520 * zoomLevel} onClick={handleClick} className="cursor-pointer mx-auto block">
+
+      <div className="overflow-auto rounded-3xl border border-outline-variant/40 bg-[#16120e] p-6 flex justify-center" style={{ minHeight: '360px' }}>
+        <svg viewBox="0 0 520 480" width={520 * zoomLevel} height={480 * zoomLevel} className="transition-all duration-200">
           <defs>
-            <radialGradient id="coreGrad" cx="50%" cy="50%" r="50%"><stop offset="0%" stopColor="#fbbf24" /><stop offset="60%" stopColor="#f59e0b" /><stop offset="100%" stopColor="#d97706" /></radialGradient>
-            <radialGradient id="ring1" cx="50%" cy="50%" r="50%"><stop offset="70%" stopColor="transparent" /><stop offset="80%" stopColor="#7dd3fc" stopOpacity="0.25" /><stop offset="100%" stopColor="#38bdf8" stopOpacity="0.1" /></radialGradient>
-            <radialGradient id="ring2" cx="50%" cy="50%" r="50%"><stop offset="70%" stopColor="transparent" /><stop offset="80%" stopColor="#93c5fd" stopOpacity="0.2" /><stop offset="100%" stopColor="#60a5fa" stopOpacity="0.08" /></radialGradient>
-            <radialGradient id="ring3" cx="50%" cy="50%" r="50%"><stop offset="70%" stopColor="transparent" /><stop offset="80%" stopColor="#a5b4fc" stopOpacity="0.15" /><stop offset="100%" stopColor="#818cf8" stopOpacity="0.06" /></radialGradient>
-            <linearGradient id="channelGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#3b82f6" /><stop offset="100%" stopColor="#60a5fa" stopOpacity="0.4" /></linearGradient>
+            <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#fef08a" />
+              <stop offset="40%" stopColor="#f97d36" />
+              <stop offset="100%" stopColor="#9f4200" />
+            </radialGradient>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="3.5" result="coloredBlur" />
+              <feMerge>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
           </defs>
 
-          <circle cx="250" cy="220" r="180" fill="url(#ring3)" stroke="#818cf8" strokeWidth="2" strokeDasharray="8 4" opacity="0.7" />
-          <text x="250" y="52" textAnchor="middle" fill="#818cf8" fontSize="11" fontWeight="600">Cooling Ring 3</text>
+          {/* Cooling Rings (Layer 3, 2, 1) */}
+          <circle cx="260" cy="200" r="170" fill="none" stroke="#60a5fa" strokeWidth={activeHighlight === 'rings' ? '4' : '2'} strokeDasharray="8 6" opacity={activeHighlight === 'rings' ? 1 : 0.6}
+            className="cursor-pointer hover:opacity-100 transition-opacity" onClick={() => registerInteraction('rings')} />
+          <circle cx="260" cy="200" r="125" fill="none" stroke="#38bdf8" strokeWidth={activeHighlight === 'rings' ? '4' : '2'} strokeDasharray="6 4" opacity={activeHighlight === 'rings' ? 1 : 0.75}
+            className="cursor-pointer hover:opacity-100 transition-opacity" onClick={() => registerInteraction('rings')} />
+          <circle cx="260" cy="200" r="85" fill="none" stroke="#0ea5e9" strokeWidth={activeHighlight === 'rings' ? '4' : '2.5'} opacity={activeHighlight === 'rings' ? 1 : 0.9}
+            className="cursor-pointer hover:opacity-100 transition-opacity" onClick={() => registerInteraction('rings')} />
 
-          <circle cx="250" cy="220" r="135" fill="url(#ring2)" stroke="#60a5fa" strokeWidth="2" strokeDasharray="6 3" opacity="0.8" />
-          <text x="395" y="130" textAnchor="start" fill="#60a5fa" fontSize="11" fontWeight="600">Cooling Ring 2</text>
+          {/* Photon Channels */}
+          <g className="cursor-pointer" onClick={() => registerInteraction('channels')}>
+            <line x1="260" y1="200" x2="110" y2="380" stroke="#38bdf8" strokeWidth={activeHighlight === 'channels' ? '5' : '3'} filter="url(#glow)" />
+            <line x1="260" y1="200" x2="260" y2="400" stroke="#38bdf8" strokeWidth={activeHighlight === 'channels' ? '5' : '3'} filter="url(#glow)" />
+            <line x1="260" y1="200" x2="410" y2="380" stroke="#38bdf8" strokeWidth={activeHighlight === 'channels' ? '5' : '3'} filter="url(#glow)" />
+          </g>
 
-          <circle cx="250" cy="220" r="90" fill="url(#ring1)" stroke="#38bdf8" strokeWidth="2" opacity="0.9" />
-          <text x="105" y="155" textAnchor="end" fill="#38bdf8" fontSize="11" fontWeight="600">Cooling Ring 1</text>
+          {/* Connected External Devices */}
+          <g>
+            <rect x="75" y="380" width="70" height="30" rx="6" fill="#1e293b" stroke="#38bdf8" strokeWidth="1.5" />
+            <text x="110" y="400" fill="#93c5fd" fontSize="10" fontWeight="bold" textAnchor="middle">Sensor Unit</text>
 
-          <circle cx="250" cy="220" r="42" fill="url(#coreGrad)" stroke="#b45309" strokeWidth="2.5" />
-          <text x="250" y="215" textAnchor="middle" fill="#fff" fontSize="11" fontWeight="700">CORE</text>
-          <text x="250" y="230" textAnchor="middle" fill="#fff" fontSize="9" fontWeight="600">CHAMBER</text>
-          <text x="250" y="244" textAnchor="middle" fill="#fef3c7" fontSize="8">4,700 TJ</text>
+            <rect x="225" y="400" width="70" height="30" rx="6" fill="#1e293b" stroke="#38bdf8" strokeWidth="1.5" />
+            <text x="260" y="420" fill="#93c5fd" fontSize="10" fontWeight="bold" textAnchor="middle">Power Relay</text>
 
-          <line x1="250" y1="262" x2="250" y2="440" stroke="url(#channelGrad)" strokeWidth="3" />
-          <polygon points="250,450 243,435 257,435" fill="#3b82f6" />
-          <rect x="220" y="455" width="60" height="24" rx="4" fill="#1e40af" />
-          <text x="250" y="471" textAnchor="middle" fill="#fff" fontSize="9" fontWeight="600">Device 1</text>
+            <rect x="375" y="380" width="70" height="30" rx="6" fill="#1e293b" stroke="#38bdf8" strokeWidth="1.5" />
+            <text x="410" y="400" fill="#93c5fd" fontSize="10" fontWeight="bold" textAnchor="middle">Research Pod</text>
+          </g>
 
-          <line x1="212" y1="245" x2="100" y2="410" stroke="url(#channelGrad)" strokeWidth="3" />
-          <polygon points="95,418 88,403 103,405" fill="#3b82f6" />
-          <rect x="62" y="422" width="60" height="24" rx="4" fill="#1e40af" />
-          <text x="92" y="438" textAnchor="middle" fill="#fff" fontSize="9" fontWeight="600">Device 2</text>
+          {/* Central Core Chamber */}
+          <circle cx="260" cy="200" r="45" fill="url(#coreGlow)" stroke="#f97d36" strokeWidth={activeHighlight === 'core' ? '4' : '2'} filter="url(#glow)"
+            className="cursor-pointer hover:scale-105 transition-transform" onClick={() => registerInteraction('core')} />
+          <text x="260" y="195" textAnchor="middle" fill="#ffffff" fontSize="11" fontWeight="800">CORE</text>
+          <text x="260" y="210" textAnchor="middle" fill="#ffffff" fontSize="9" fontWeight="700">CHAMBER</text>
+          <text x="260" y="224" textAnchor="middle" fill="#ffb692" fontSize="8" fontWeight="600">4,700 TJ</text>
 
-          <line x1="288" y1="245" x2="400" y2="410" stroke="url(#channelGrad)" strokeWidth="3" />
-          <polygon points="405,418 397,405 412,403" fill="#3b82f6" />
-          <rect x="378" y="422" width="60" height="24" rx="4" fill="#1e40af" />
-          <text x="408" y="438" textAnchor="middle" fill="#fff" fontSize="9" fontWeight="600">Device 3</text>
-
-          <text x="170" y="360" fill="#3b82f6" fontSize="10" fontWeight="600" transform="rotate(-55 170 360)">Photon Channel</text>
-          <text x="280" y="360" fill="#3b82f6" fontSize="10" fontWeight="600" transform="rotate(55 310 360)">Photon Channel</text>
-          <text x="258" y="365" fill="#3b82f6" fontSize="10" fontWeight="600">Photon Channel</text>
-
-          <rect x="10" y="490" width="480" height="26" rx="6" fill="#f1f5f9" stroke="#cbd5e1" strokeWidth="1" />
-          <text x="250" y="508" textAnchor="middle" fill="#475569" fontSize="10" fontWeight="600">Core Chamber → Photon Channels → Devices | Cooling Rings regulate heat → IR radiation</text>
+          {/* Labels & Annotations */}
+          <text x="260" y="25" textAnchor="middle" fill="#93c5fd" fontSize="11" fontWeight="700">Concentric Cooling Rings (Thermal Absorption)</text>
+          <text x="180" y="315" fill="#38bdf8" fontSize="10" fontWeight="600">Photon Channels</text>
+          <text x="340" y="315" fill="#38bdf8" fontSize="10" fontWeight="600">Energy Flow →</text>
         </svg>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 text-center text-xs">
+        <button onClick={() => registerInteraction('core')}
+          className={`p-3 rounded-2xl border transition-all ${activeHighlight === 'core' ? 'bg-primary-fixed/40 border-brand-orange text-primary font-bold shadow-xs' : 'bg-surface-container-low border-outline-variant/40 text-on-surface hover:bg-surface-container'}`}>
+          🟡 1. Core Chamber
+        </button>
+        <button onClick={() => registerInteraction('channels')}
+          className={`p-3 rounded-2xl border transition-all ${activeHighlight === 'channels' ? 'bg-sky-100 border-sky-400 text-sky-900 font-bold shadow-xs' : 'bg-surface-container-low border-outline-variant/40 text-on-surface hover:bg-surface-container'}`}>
+          ⚡ 2. Photon Channels
+        </button>
+        <button onClick={() => registerInteraction('rings')}
+          className={`p-3 rounded-2xl border transition-all ${activeHighlight === 'rings' ? 'bg-primary-fixed/40 border-brand-orange text-primary font-bold shadow-xs' : 'bg-surface-container-low border-outline-variant/40 text-on-surface hover:bg-surface-container'}`}>
+          🌀 3. Cooling Rings
+        </button>
       </div>
     </div>
   );
 }
 
-function AudioPlayer({ script, onTelemetry }) {
+/* ── Rock-Solid Speech Synthesis Audio Player ── */
+function AudioNarrationPlayer({ script, onTelemetry }) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [rate, setRate] = useState(1.0);
   const [progress, setProgress] = useState(0);
   const [playCount, setPlayCount] = useState(0);
+
+  const synthRef = useRef(typeof window !== 'undefined' ? window.speechSynthesis : null);
   const utteranceRef = useRef(null);
-  const intervalRef = useRef(null);
+  const progressIntervalRef = useRef(null);
   const startTimeRef = useRef(0);
-  const estimatedDurationRef = useRef(0);
+  const estimatedDurationRef = useRef(25000);
 
   useEffect(() => {
     return () => {
-      window.speechSynthesis.cancel();
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
     };
   }, []);
 
   const handlePlay = () => {
-    if (isPlaying) return;
-    window.speechSynthesis.cancel();
+    if (!synthRef.current) return;
+
+    if (isPlaying) {
+      synthRef.current.cancel();
+      setIsPlaying(false);
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      return;
+    }
+
+    synthRef.current.cancel();
 
     const utter = new SpeechSynthesisUtterance(script);
-    utter.rate = 0.95;
-    utter.pitch = 1;
-    utter.volume = 1;
-    utteranceRef.current = utter;
+    utter.rate = rate;
+    utter.pitch = 1.0;
+
+    // Pick best English voice available
+    const voices = synthRef.current.getVoices?.() || [];
+    const englishVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.default)) || voices[0];
+    if (englishVoice) utter.voice = englishVoice;
 
     const words = script.split(/\s+/).length;
-    estimatedDurationRef.current = (words / 2.5) * 1000;
+    estimatedDurationRef.current = ((words / (2.6 * rate)) * 1000);
     startTimeRef.current = Date.now();
 
     utter.onend = () => {
       setIsPlaying(false);
       setProgress(100);
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
       if (onTelemetry) onTelemetry({ completed: true, playCount: playCount + 1, percent: 100 });
     };
 
     utter.onerror = () => {
       setIsPlaying(false);
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
     };
 
-    window.speechSynthesis.speak(utter);
+    synthRef.current.speak(utter);
+    utteranceRef.current = utter;
     setIsPlaying(true);
-    setPlayCount(c => c + 1);
-    if (onTelemetry) onTelemetry({ completed: false, playCount: playCount + 1, percent: 0 });
+    const newCount = playCount + 1;
+    setPlayCount(newCount);
+    if (onTelemetry) onTelemetry({ completed: false, playCount: newCount, percent: Math.round(progress) });
 
-    intervalRef.current = setInterval(() => {
+    // Progress interval with Chrome keep-alive
+    if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    progressIntervalRef.current = setInterval(() => {
+      if (!synthRef.current.speaking) {
+        setIsPlaying(false);
+        clearInterval(progressIntervalRef.current);
+        return;
+      }
+      // Keep Chrome from timing out long speech
+      synthRef.current.pause();
+      synthRef.current.resume();
+
       const elapsed = Date.now() - startTimeRef.current;
-      const pct = Math.min(100, (elapsed / estimatedDurationRef.current) * 100);
+      const pct = Math.min(99, Math.round((elapsed / estimatedDurationRef.current) * 100));
       setProgress(pct);
-    }, 200);
-  };
-
-  const handlePause = () => {
-    if (isPlaying) {
-      window.speechSynthesis.pause();
-      setIsPlaying(false);
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      const elapsed = Date.now() - startTimeRef.current;
-      const pct = Math.min(100, (elapsed / estimatedDurationRef.current) * 100);
-      if (onTelemetry) onTelemetry({ completed: false, playCount, percent: Math.round(pct) });
-    } else if (window.speechSynthesis.paused) {
-      window.speechSynthesis.resume();
-      setIsPlaying(true);
-      startTimeRef.current = Date.now() - (estimatedDurationRef.current * progress / 100);
-      intervalRef.current = setInterval(() => {
-        const elapsed = Date.now() - startTimeRef.current;
-        const pct = Math.min(100, (elapsed / estimatedDurationRef.current) * 100);
-        setProgress(pct);
-      }, 200);
-    }
+    }, 250);
   };
 
   const handleStop = () => {
-    window.speechSynthesis.cancel();
+    if (synthRef.current) synthRef.current.cancel();
     setIsPlaying(false);
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    const pct = progress;
     setProgress(0);
-    if (onTelemetry) onTelemetry({ completed: false, playCount, percent: Math.round(pct) });
+    if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
   };
 
   return (
-    <div data-interactive="true" className="space-y-4">
-      <div className="flex items-center gap-3">
-        <button data-interactive="true" onClick={handlePlay} className="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-all shadow-md"><Play className="w-5 h-5" /></button>
-        <button data-interactive="true" onClick={handlePause} className="p-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-full transition-all"><Pause className="w-5 h-5" /></button>
-        <button data-interactive="true" onClick={handleStop} className="p-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-full transition-all"><Square className="w-4 h-4" /></button>
-        <span className="text-sm text-slate-500 ml-2">{isPlaying ? '🔊 Playing...' : progress >= 100 ? '✅ Completed' : '⏸ Ready'}</span>
-        <span className="text-xs text-slate-400 ml-auto">Plays: {playCount}</span>
+    <div data-interactive="true" className="space-y-4 bg-gradient-to-r from-surface-container-low via-surface-container to-surface p-6 rounded-3xl border border-outline-variant/60 shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <button data-interactive="true" onClick={handlePlay}
+            className="px-6 py-2.5 rounded-full font-semibold text-sm transition-all shadow-card flex items-center gap-2 bg-brand-orange hover:bg-brand-orange-hover text-white">
+            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            {isPlaying ? 'Pause Narration' : 'Listen to Narration'}
+          </button>
+          <button data-interactive="true" onClick={handleStop}
+            className="p-2.5 bg-white hover:bg-surface-container text-on-surface-variant rounded-full border border-outline-variant transition-all shadow-xs">
+            <RotateCcw className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2 text-xs font-semibold text-on-surface-variant">
+          <span>Speed:</span>
+          {[0.85, 1.0, 1.15].map((s) => (
+            <button key={s} data-interactive="true" onClick={() => setRate(s)}
+              className={`px-3 py-1 rounded-full transition-all ${rate === s ? 'bg-brand-orange text-white font-bold shadow-xs' : 'bg-white text-on-surface-variant hover:bg-surface-container border border-outline-variant'}`}>
+              {s}x
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="w-full bg-slate-200 rounded-full h-2.5">
-        <div className="bg-blue-500 h-2.5 rounded-full transition-all duration-200" style={{ width: `${progress}%` }}></div>
+
+      <div className="space-y-1.5">
+        <div className="w-full bg-surface-container rounded-full h-2.5 overflow-hidden">
+          <div className="bg-brand-orange h-2.5 rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
+        </div>
+        <div className="flex justify-between text-[11px] text-primary font-medium">
+          <span>{isPlaying ? '🔊 Voice Narration Playing...' : progress >= 100 ? '✓ Complete' : 'Ready'}</span>
+          <span>Plays: {playCount}</span>
+        </div>
       </div>
     </div>
   );
 }
 
+/* ── Gamification Burst Visuals ── */
 function ConfettiBurst() {
-  const particles = Array.from({ length: 30 }, (_, i) => ({
-    id: i, left: Math.random() * 100, delay: Math.random() * 0.3, duration: 0.8 + Math.random() * 0.6,
+  const [particles] = useState(() => Array.from({ length: 30 }, (_, i) => ({
+    id: i,
+    left: Math.random() * 100,
+    delay: Math.random() * 0.25,
+    duration: 0.8 + Math.random() * 0.6,
     color: ['#fbbf24', '#f59e0b', '#ef4444', '#8b5cf6', '#3b82f6', '#10b981'][Math.floor(Math.random() * 6)],
-    size: 4 + Math.random() * 6, rotation: Math.random() * 360,
-  }));
+    size: 5 + Math.random() * 6,
+    rotation: Math.random() * 360,
+  })));
+
   return (
     <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
       {particles.map(p => (
         <div key={p.id} style={{
           position: 'absolute', left: `${p.left}%`, top: '-10px',
           width: `${p.size}px`, height: `${p.size}px`,
-          backgroundColor: p.color, borderRadius: p.size > 7 ? '50%' : '1px',
+          backgroundColor: p.color, borderRadius: p.size > 8 ? '50%' : '2px',
           transform: `rotate(${p.rotation}deg)`,
           animation: `confettiFall ${p.duration}s ease-in ${p.delay}s forwards`,
         }} />
@@ -325,18 +599,17 @@ function ConfettiBurst() {
   );
 }
 
-function XpPopup({ amount }) {
-  return (
-    <div className="fixed top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none">
-      <div style={{ animation: 'xpFloat 1.2s ease-out forwards' }} className="text-4xl font-extrabold text-amber-500 drop-shadow-lg">+{amount} XP</div>
-      <style>{`@keyframes xpFloat { 0% { transform: translateY(0) scale(0.5); opacity: 0; } 30% { transform: translateY(-20px) scale(1.2); opacity: 1; } 100% { transform: translateY(-80px) scale(1); opacity: 0; } }`}</style>
-    </div>
-  );
-}
-
+/* ══════════════════════════════════════════════════════════
+   MAIN ASSESSMENT ENGINE
+   ══════════════════════════════════════════════════════════ */
 export default function AssessmentEngine({ onComplete, currentUser }) {
   const [phase, setPhase] = useState('login');
-  const [studentName, setStudentName] = useState('');
+  const [studentName, setStudentName] = useState(currentUser?.name || '');
+
+  // Always scroll to top when assessment phase transitions
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [phase]);
 
   const telemetryRef = useRef({
     assessmentStartTime: 0,
@@ -375,14 +648,13 @@ export default function AssessmentEngine({ onComplete, currentUser }) {
   });
 
   const idleTimerRef = useRef(null);
-  const lastActivityRef = useRef(Date.now());
+  const lastActivityRef = useRef(0);
 
   const resetIdleTimer = useCallback(() => {
     lastActivityRef.current = Date.now();
-    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-    idleTimerRef.current = setTimeout(() => {
+    if (idleTimerRef.current) clearInterval(idleTimerRef.current);
+    idleTimerRef.current = setInterval(() => {
       telemetryRef.current.idleEvents++;
-      resetIdleTimer();
     }, IDLE_THRESHOLD);
   }, []);
 
@@ -393,7 +665,7 @@ export default function AssessmentEngine({ onComplete, currentUser }) {
     resetIdleTimer();
     return () => {
       events.forEach(e => window.removeEventListener(e, handler));
-      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      if (idleTimerRef.current) clearInterval(idleTimerRef.current);
     };
   }, [resetIdleTimer]);
 
@@ -425,6 +697,7 @@ export default function AssessmentEngine({ onComplete, currentUser }) {
 
     const isWhitespace = e.target.classList.contains('min-h-screen') ||
       e.target.classList.contains('bg-slate-50') ||
+      e.target.classList.contains('bg-surface') ||
       (!isInteractive && !e.target.closest('.bg-white'));
 
     if (isWhitespace) {
@@ -455,8 +728,8 @@ export default function AssessmentEngine({ onComplete, currentUser }) {
     er.lastClickTime = now;
   };
 
-  const handleLogin = () => {
-    if (!studentName.trim()) return;
+  const handleStart = () => {
+    if (!studentName.trim() && !currentUser?.name) return;
     telemetryRef.current.assessmentStartTime = Date.now();
     telemetryRef.current.assessmentRestarts = getRestartCount();
     setPhase('activity1_clean');
@@ -467,6 +740,8 @@ export default function AssessmentEngine({ onComplete, currentUser }) {
     t.totalTime = Date.now() - t.assessmentStartTime;
     return {
       studentId: currentUser?.id,
+      name: studentName || currentUser?.name,
+      grade: currentUser?.grade || 'All',
       activity1: {
         tClean: t.activity1.tClean,
         tClutter: t.activity1.tClutter,
@@ -530,26 +805,47 @@ export default function AssessmentEngine({ onComplete, currentUser }) {
     } catch (err) {
       console.error('Telemetry submission failed:', err);
     }
-    setTimeout(() => setPhase('success'), 2500);
+    setTimeout(() => setPhase('success'), 2000);
   };
 
   if (phase === 'login') {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6" onClick={handleGlobalClick}>
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-          <div className="flex justify-center mb-6">
-            <div className="bg-blue-600 p-3 rounded-xl"><BrainCircuit className="w-7 h-7 text-white" /></div>
+      <div className="min-h-screen bg-surface flex items-center justify-center p-6 select-none" onClick={handleGlobalClick}>
+        <div className="w-full max-w-md bg-white rounded-3xl shadow-soft border border-outline-variant/40 p-8 text-center">
+          <div className="w-14 h-14 bg-brand-orange rounded-2xl flex items-center justify-center text-white mx-auto mb-4 shadow-card">
+            <BrainCircuit className="w-8 h-8" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-800 text-center mb-1">LumynMinds Assessment</h1>
-          <p className="text-sm text-slate-500 text-center mb-8">Cognitive Profile Calibration — Grades 8–10</p>
-          <label className="block text-sm font-semibold text-slate-700 mb-2">Your Name</label>
-          <input type="text" value={studentName} onChange={e => setStudentName(e.target.value)}
-            placeholder="Enter your name" data-interactive="true"
-            className="w-full px-4 py-3 border border-slate-300 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-6"
-            onKeyDown={e => e.key === 'Enter' && handleLogin()} />
-          <button onClick={handleLogin} disabled={!studentName.trim()} data-interactive="true"
-            className={`w-full py-3 rounded-xl font-semibold text-white transition-all ${studentName.trim() ? 'bg-blue-600 hover:bg-blue-700 shadow-md' : 'bg-slate-300 cursor-not-allowed'}`}>
-            Begin Assessment
+          <h1 className="text-2xl font-bold text-on-surface mb-1">Cognitive Calibration</h1>
+          <p className="text-sm text-on-surface-variant mb-6">
+            A quick, adaptive game to tailor your textbook layout, font, audio narration, and study pace to how your brain works best.
+          </p>
+
+          <div className="bg-surface-container-low border border-outline-variant/40 rounded-2xl p-4 text-left mb-6 space-y-2 text-xs text-on-surface">
+            <p className="font-bold flex items-center gap-1.5 text-primary"><Sparkles className="w-4 h-4 text-brand-orange" /> Three Quick Micro-Activities (3–4 mins):</p>
+            <p>1. <strong>Visual Exploration:</strong> Finding key concepts in clean and active layouts.</p>
+            <p>2. <strong>Modality Choice:</strong> Explore information via reading, diagrams, or audio narration.</p>
+            <p>3. <strong>Cognitive Reasoning:</strong> Quick pattern and conceptual matching.</p>
+          </div>
+
+          <div className="text-left mb-6">
+            <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">Student Name</label>
+            <input
+              type="text"
+              value={studentName}
+              onChange={e => setStudentName(e.target.value)}
+              placeholder="Enter your name"
+              data-interactive="true"
+              className="w-full px-4 py-3.5 border border-outline-variant rounded-xl text-on-surface font-semibold focus:outline-none focus:ring-2 focus:ring-brand-orange focus:border-brand-orange text-sm bg-surface-container-lowest"
+              onKeyDown={e => e.key === 'Enter' && handleStart()}
+            />
+          </div>
+
+          <button
+            onClick={handleStart}
+            disabled={!studentName.trim() && !currentUser?.name}
+            data-interactive="true"
+            className="w-full py-4 rounded-full font-semibold text-white bg-brand-orange hover:bg-brand-orange-hover shadow-card transition-all flex items-center justify-center gap-2 hover:-translate-y-0.5">
+            Begin Calibration <ArrowRight className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -557,108 +853,135 @@ export default function AssessmentEngine({ onComplete, currentUser }) {
   }
 
   if (phase === 'activity1_clean') {
-    return <Activity1Phase key="clean" title="Information Retrieval — Clean Layout"
-      paragraphs={SHARED_PARAGRAPHS} isCluttered={false} onGlobalClick={handleGlobalClick}
-      onComplete={(data) => {
-        const t = telemetryRef.current;
-        t.activity1.tClean = data.tTime;
-        t.activity1.wrongClicksClean = data.wrongClicks;
-        t.activity1.tInit = data.tInit;
-        t.activity1.paragraphViewTime = data.paragraphViewTime;
-        t.activity1.uniqueParagraphsViewed = data.uniqueParagraphsViewed;
-        setPhase('activity1_clutter');
-      }} />;
+    return (
+      <Activity1Phase
+        key="clean"
+        title="Activity 1A: Information Retrieval (Clean Layout)"
+        paragraphs={SHARED_PARAGRAPHS}
+        isCluttered={false}
+        onGlobalClick={handleGlobalClick}
+        onComplete={(data) => {
+          const t = telemetryRef.current;
+          t.activity1.tClean = data.tTime;
+          t.activity1.wrongClicksClean = data.wrongClicks;
+          t.activity1.tInit = data.tInit;
+          t.activity1.paragraphViewTime = data.paragraphViewTime;
+          t.activity1.uniqueParagraphsViewed = data.uniqueParagraphsViewed;
+          setPhase('activity1_clutter');
+        }}
+      />
+    );
   }
 
   if (phase === 'activity1_clutter') {
-    return <Activity1Phase key="clutter" title="Information Retrieval — Cluttered Layout"
-      paragraphs={SHARED_PARAGRAPHS} isCluttered={true} onGlobalClick={handleGlobalClick}
-      onComplete={(data) => {
-        const t = telemetryRef.current;
-        t.activity1.tClutter = data.tTime;
-        t.activity1.wrongClicksClutter = data.wrongClicks;
-        t.activity1.scrollBacks = data.scrollBacks;
-        t.activity1.rereads = data.rereads;
-        t.activity1.activity1Speed = data.tTime > 0 ? (REQUIRED_TARGETS / (data.tTime / 1000)) : 0;
-        t.completedActivities++;
-        setPhase('activity2');
-      }} />;
+    return (
+      <Activity1Phase
+        key="clutter"
+        title="Activity 1B: Information Retrieval (Active Classroom Layout)"
+        paragraphs={SHARED_PARAGRAPHS}
+        isCluttered={true}
+        onGlobalClick={handleGlobalClick}
+        onComplete={(data) => {
+          const t = telemetryRef.current;
+          t.activity1.tClutter = data.tTime;
+          t.activity1.wrongClicksClutter = data.wrongClicks;
+          t.activity1.scrollBacks = data.scrollBacks;
+          t.activity1.rereads = data.rereads;
+          t.activity1.activity1Speed = data.tTime > 0 ? (REQUIRED_TARGETS / (data.tTime / 1000)) : 0;
+          t.completedActivities++;
+          setPhase('activity2');
+        }}
+      />
+    );
   }
 
   if (phase === 'activity2') {
-    return <Activity2 onGlobalClick={handleGlobalClick}
-      onComplete={(data) => {
-        const t = telemetryRef.current;
-        t.activity2.firstChoice = data.firstChoice;
-        t.activity2.tText = data.tText;
-        t.activity2.tVisual = data.tVisual;
-        t.activity2.tAudio = data.tAudio;
-        t.activity2.tabSwitches = data.tabSwitches;
-        t.activity2.recallCorrect = data.recallCorrect;
-        t.activity2.recallTotal = 3;
-        t.activity2.audioStarted = data.audioStarted;
-        t.activity2.audioCompleted = data.audioCompleted;
-        t.activity2.audioPlayCount = data.audioPlayCount;
-        t.activity2.audioCompletionPercent = data.audioCompletionPercent;
-        t.activity2.diagramZooms = data.diagramZooms;
-        t.activity2.diagramInteractions = data.diagramInteractions;
-        t.activity2.averageResponseTime = data.averageResponseTime;
-        t.activity2.questionHesitationTime = data.questionHesitationTime;
-        t.completedActivities++;
-        setPhase('activity3');
-      }} />;
+    return (
+      <Activity2
+        onGlobalClick={handleGlobalClick}
+        onComplete={(data) => {
+          const t = telemetryRef.current;
+          t.activity2.firstChoice = data.firstChoice;
+          t.activity2.tText = data.tText;
+          t.activity2.tVisual = data.tVisual;
+          t.activity2.tAudio = data.tAudio;
+          t.activity2.tabSwitches = data.tabSwitches;
+          t.activity2.recallCorrect = data.recallCorrect;
+          t.activity2.recallTotal = 3;
+          t.activity2.audioStarted = data.audioStarted;
+          t.activity2.audioCompleted = data.audioCompleted;
+          t.activity2.audioPlayCount = data.audioPlayCount;
+          t.activity2.audioCompletionPercent = data.audioCompletionPercent;
+          t.activity2.diagramZooms = data.diagramZooms;
+          t.activity2.diagramInteractions = data.diagramInteractions;
+          t.activity2.averageResponseTime = data.averageResponseTime;
+          t.activity2.questionHesitationTime = data.questionHesitationTime;
+          t.completedActivities++;
+          setPhase('activity3');
+        }}
+      />
+    );
   }
 
   if (phase === 'activity3') {
-    return <Activity3 onGlobalClick={handleGlobalClick}
-      onComplete={(data) => {
-        const t = telemetryRef.current;
-        t.activity3.correctAnalogies = data.correctAnalogies;
-        t.activity3.speedBase = data.speedBase;
-        t.activity3.speedReward = data.speedReward;
-        t.activity3.activity3Speed = data.activity3Speed;
-        t.activity3.averageResponseTime = data.averageResponseTime;
-        t.activity3.questionHesitationTime = data.questionHesitationTime;
-        t.completedActivities++;
-        submitTelemetry();
-      }} />;
+    return (
+      <Activity3
+        onGlobalClick={handleGlobalClick}
+        onComplete={(data) => {
+          const t = telemetryRef.current;
+          t.activity3.correctAnalogies = data.correctAnalogies;
+          t.activity3.speedBase = data.speedBase;
+          t.activity3.speedReward = data.speedReward;
+          t.activity3.activity3Speed = data.activity3Speed;
+          t.activity3.averageResponseTime = data.averageResponseTime;
+          t.activity3.questionHesitationTime = data.questionHesitationTime;
+          t.completedActivities++;
+          submitTelemetry();
+        }}
+      />
+    );
   }
 
   if (phase === 'analyzing') {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6" onClick={handleGlobalClick}>
-        <div className="text-center">
-          <Loader2 className="w-16 h-16 text-blue-600 animate-spin mx-auto mb-6" />
-          <h2 className="text-2xl font-bold text-slate-800 mb-2">Analyzing Cognitive Profile...</h2>
-          <p className="text-slate-500 font-medium">Processing behavioral telemetry through neural assessment pipeline.</p>
+      <div className="min-h-screen bg-surface flex items-center justify-center p-6" onClick={handleGlobalClick}>
+        <div className="text-center max-w-sm">
+          <Loader2 className="w-14 h-14 text-brand-orange animate-spin mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-on-surface mb-2">Analyzing Cognitive Vectors</h2>
+          <p className="text-sm text-on-surface-variant">Synthesizing behavioral metrics into your 12-dimensional cognitive learning profile...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6" onClick={handleGlobalClick}>
-      <div className="text-center max-w-md">
-        <CheckCircle2 className="w-20 h-20 text-green-500 mx-auto mb-6" />
-        <h2 className="text-3xl font-extrabold text-slate-800 mb-3">Assessment Complete</h2>
-        <p className="text-slate-500 font-medium mb-8">Your personalized learning profile has been generated.</p>
+    <div className="min-h-screen bg-surface flex items-center justify-center p-6" onClick={handleGlobalClick}>
+      <div className="text-center max-w-lg bg-white p-8 md:p-10 rounded-3xl border border-outline-variant/40 shadow-soft">
+        <CheckCircle2 className="w-16 h-16 text-emerald-600 mx-auto mb-4" />
+        <h2 className="text-3xl font-extrabold text-on-surface mb-2">Calibration Complete!</h2>
+        <p className="text-sm text-on-surface-variant mb-8 leading-relaxed">
+          Your personalized Cognitive Needs Profile has been established. Your textbook, font hierarchy, sensory themes, and learning aids are now aligned with how you learn best.
+        </p>
+
         <button data-interactive="true" onClick={() => {
-          if (onComplete) { onComplete(buildPayload()); }
-          else { try { window.location.href = '/student-dashboard'; } catch (_) { /* noop */ } }
-        }} className="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-md transition-all inline-flex items-center gap-2">
-          Continue Learning <ArrowRight className="w-5 h-5" />
+          if (onComplete) onComplete(buildPayload());
+        }} className="w-full py-4 bg-brand-orange hover:bg-brand-orange-hover text-white font-semibold rounded-full shadow-card transition-all flex items-center justify-center gap-2 hover:-translate-y-0.5">
+          Enter Your Tailored Learning Portal <ArrowRight className="w-5 h-5" />
         </button>
       </div>
     </div>
   );
 }
 
-
+/* ══════════════════════════════════════════════════════════
+   ACTIVITY 1: Clean vs Cluttered Layout Search
+   ══════════════════════════════════════════════════════════ */
 function Activity1Phase({ title, paragraphs, isCluttered, onGlobalClick, onComplete }) {
   const [found, setFound] = useState([]);
+  const [feedbackMsg, setFeedbackMsg] = useState('');
   const [wrongClicks, setWrongClicks] = useState(0);
-  const [tooFastMsg, setTooFastMsg] = useState(false);
-  const startRef = useRef(Date.now());
+
+  const startRef = useRef(0);
   const firstClickRef = useRef(0);
   const scrollBacksRef = useRef(0);
   const rereadsRef = useRef(0);
@@ -668,12 +991,17 @@ function Activity1Phase({ title, paragraphs, isCluttered, onGlobalClick, onCompl
   const totalParaViewTimeRef = useRef(0);
 
   useEffect(() => {
+    startRef.current = Date.now();
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, []);
+
+  useEffect(() => {
     const container = containerRef.current;
     if (!container || !isCluttered) return;
     let lastScroll = container.scrollTop;
     const handleScroll = () => {
       const current = container.scrollTop;
-      if (lastScroll - current > 150) scrollBacksRef.current++;
+      if (lastScroll - current > 120) scrollBacksRef.current++;
       lastScroll = current;
     };
     container.addEventListener('scroll', handleScroll, { passive: true });
@@ -704,100 +1032,124 @@ function Activity1Phase({ title, paragraphs, isCluttered, onGlobalClick, onCompl
     return () => observer.disconnect();
   }, [isCluttered]);
 
-  const tryComplete = (newFound) => {
+  const finishPhase = useCallback(() => {
     const elapsed = Date.now() - startRef.current;
-    if (elapsed < MIN_READING_TIME) {
-      setTooFastMsg(true);
-      setTimeout(() => setTooFastMsg(false), 3000);
-      return;
-    }
     Object.keys(paraViewStartRef.current).forEach(id => {
       totalParaViewTimeRef.current += Date.now() - paraViewStartRef.current[id];
     });
     onComplete({
-      tTime: elapsed,
+      tTime: Math.max(elapsed, 1000),
       wrongClicks,
-      tInit: firstClickRef.current,
+      tInit: firstClickRef.current || 1500,
       scrollBacks: scrollBacksRef.current,
       rereads: rereadsRef.current,
       paragraphViewTime: totalParaViewTimeRef.current,
       uniqueParagraphsViewed: viewedRef.current.size,
     });
-  };
+  }, [onComplete, wrongClicks]);
 
-  const handlePhraseClick = (seg) => {
-    if (found.includes(seg.phraseId)) return;
-    if (seg.isTarget) {
-      if (firstClickRef.current === 0) firstClickRef.current = Date.now() - startRef.current;
-      const newFound = [...found, seg.phraseId];
+  const handlePhraseClick = useCallback((tok) => {
+    if (tok.phraseId && found.includes(tok.phraseId)) return;
+
+    if (firstClickRef.current === 0) {
+      firstClickRef.current = Date.now() - startRef.current;
+    }
+
+    if (tok.isTarget) {
+      const newFound = [...found, tok.phraseId];
       setFound(newFound);
-      if (newFound.length === REQUIRED_TARGETS) tryComplete(newFound);
+      setFeedbackMsg(`✓ Identified: ${tok.text.replace(/[,.]/g, '')} (${tok.label || 'Space Concept'})`);
+
+      if (newFound.length >= REQUIRED_TARGETS) {
+        setTimeout(() => finishPhase(), 600);
+      }
+    } else if (tok.isDistractor) {
+      setWrongClicks(w => w + 1);
+      setFeedbackMsg(tok.hint || `"${tok.text}" is Earth technology — look for stars, planets, and space concepts!`);
+      setTimeout(() => setFeedbackMsg(''), 3000);
     } else {
       setWrongClicks(w => w + 1);
+      const cleanWord = tok.text.replace(/[^a-zA-Z]/g, '');
+      if (cleanWord) {
+        setFeedbackMsg(`"${cleanWord}" is not a celestial concept — look for stars, planets, galaxies, or cosmic forces!`);
+        setTimeout(() => setFeedbackMsg(''), 2500);
+      }
     }
-  };
+  }, [finishPhase, found]);
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6" onClick={onGlobalClick}>
+    <div className="min-h-screen bg-surface p-6 select-none" onClick={onGlobalClick}>
       <div className="max-w-4xl mx-auto">
-        <div className="mb-6">
-          <h2 className="text-xl font-bold text-slate-800">{title}</h2>
-          <p className="text-sm text-slate-500 mt-1">Read the passage carefully and click on the <span className="font-semibold text-blue-600">{REQUIRED_TARGETS} key terms</span> related to space and the solar system.</p>
-          <div className="mt-3 flex items-center gap-3">
-            <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-bold">{found.length} / {REQUIRED_TARGETS} Found</span>
-            {tooFastMsg && <span className="text-amber-600 text-sm font-medium animate-pulse">Please continue reading before submitting.</span>}
+        <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-on-surface">{title}</h2>
+            <p className="text-sm text-on-surface-variant mt-1">
+              Read carefully and click any <span className="font-bold text-primary">{REQUIRED_TARGETS} celestial bodies or space concepts</span> mentioned in the text.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className={`px-5 py-2 rounded-full text-sm font-bold shadow-xs transition-all ${
+              found.length >= REQUIRED_TARGETS ? 'bg-emerald-600 text-white' : 'bg-surface-container text-primary border border-primary/20'
+            }`}>
+              {found.length} / {REQUIRED_TARGETS} Identified
+            </span>
           </div>
         </div>
 
-        <div className={isCluttered ? 'grid grid-cols-1 lg:grid-cols-4 gap-4' : ''}>
-          <div ref={containerRef} className={`bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4 ${isCluttered ? 'lg:col-span-3 max-h-[70vh] overflow-y-auto' : ''}`}>
+        {feedbackMsg && (
+          <div className="mb-4 px-5 py-2.5 bg-surface-container-low border border-primary/20 text-primary rounded-full text-xs font-semibold animate-fadeIn">
+            {feedbackMsg}
+          </div>
+        )}
+
+        <div className={isCluttered ? 'grid grid-cols-1 lg:grid-cols-4 gap-6' : ''}>
+          <div ref={containerRef}
+            className={`bg-white rounded-3xl shadow-soft border border-outline-variant/40 p-6 space-y-4 ${
+              isCluttered ? 'lg:col-span-3 max-h-[72vh] overflow-y-auto' : ''
+            }`}>
             {paragraphs.map((para) => (
-              <p key={para.id} data-para-id={para.id} data-interactive="true"
-                className="text-base leading-relaxed p-3 rounded-xl border border-transparent select-none">
-                {para.segments.map((seg, si) => {
-                  if (seg.phrase) {
-                    const isFound = found.includes(seg.phraseId);
-                    const isWrong = !seg.isTarget && found.includes(seg.phraseId);
-                    return (
-                      <span key={si} data-interactive="true"
-                        onClick={(e) => { e.stopPropagation(); handlePhraseClick(seg); }}
-                        className={`cursor-pointer ${isFound && seg.isTarget ? 'underline decoration-2 decoration-green-500' : ''} ${isWrong ? 'line-through text-red-400' : ''}`}>
-                        {seg.text}
-                      </span>
-                    );
-                  }
-                  return <span key={si}>{seg.text}</span>;
+              <p key={para.id} data-para-id={para.id}
+                className="text-base text-on-surface leading-relaxed p-3 rounded-2xl hover:bg-surface-container-low/40 transition-colors">
+                {para.tokens.map((tok, ti) => {
+                  const isFound = tok.phraseId && found.includes(tok.phraseId);
+                  return (
+                    <span
+                      key={ti}
+                      data-interactive="true"
+                      onClick={(e) => { e.stopPropagation(); handlePhraseClick(tok); }}
+                      className={`inline-block px-1.5 py-0.5 mx-0.5 rounded-lg font-medium transition-all cursor-pointer ${
+                        isFound
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold shadow-2xs'
+                          : 'hover:bg-primary-fixed/40 border border-transparent hover:border-primary-fixed text-on-surface'
+                      }`}
+                    >
+                      {isFound ? `✓ ${tok.text}` : tok.text}
+                    </span>
+                  );
                 })}
               </p>
             ))}
           </div>
 
+          {/* Realistic High-Distraction Visual Noise for Cluttered Layout */}
           {isCluttered && (
-            <div className="space-y-4">
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-                <h4 className="text-sm font-bold text-amber-700 mb-2">🐠 Did You Know?</h4>
-                {CLUTTER_SIDEBAR.map((fact, i) => (<p key={i} className="text-xs text-amber-600 mb-1.5">{fact}</p>))}
+            <div className="space-y-3.5">
+              <div className="text-[11px] font-bold text-on-surface-variant/70 uppercase tracking-wider px-1">
+                Classroom Feed (Noise Vector)
               </div>
-              <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4">
-                <h4 className="text-sm font-bold text-purple-700 mb-2">📊 Ocean Stats</h4>
-                <p className="text-xs text-purple-600">Average depth: 3,688m</p>
-                <p className="text-xs text-purple-600">Deepest point: 10,994m</p>
-                <p className="text-xs text-purple-600">Volume: 1.335 billion km³</p>
-              </div>
-              <div className="bg-cyan-50 border border-cyan-200 rounded-2xl p-4">
-                <h4 className="text-sm font-bold text-cyan-700 mb-2">🔬 Featured Research</h4>
-                <p className="text-xs text-cyan-600">Woods Hole Oceanographic Institution recently discovered 12 new species near the Galápagos Rift hydrothermal vent field.</p>
-              </div>
-              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4">
-                <h4 className="text-sm font-bold text-rose-700 mb-2">🌡️ Temperature Facts</h4>
-                <p className="text-xs text-rose-600">Surface: 17°C average</p>
-                <p className="text-xs text-rose-600">Deep sea: 0–3°C</p>
-                <p className="text-xs text-rose-600">Hydrothermal vents: up to 400°C</p>
-              </div>
-              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 animate-pulse">
-                <h4 className="text-sm font-bold text-emerald-700 mb-1">📢 Sponsored</h4>
-                <p className="text-xs text-emerald-600">OceanVR™ — Explore the deep sea in virtual reality. Download free on App Store.</p>
-              </div>
+              {CLUTTER_NOTIFICATIONS.map((item, i) => {
+                const Icon = item.icon;
+                return (
+                  <div key={i} className={`p-4 rounded-2xl border shadow-xs text-left transition-all hover:scale-[1.02] ${item.color}`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Icon className="w-4 h-4" />
+                      <span className="font-bold text-xs">{item.title}</span>
+                    </div>
+                    <p className="text-[11px] opacity-90 leading-tight">{item.text}</p>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -806,14 +1158,14 @@ function Activity1Phase({ title, paragraphs, isCluttered, onGlobalClick, onCompl
   );
 }
 
-
+/* ══════════════════════════════════════════════════════════
+   ACTIVITY 2: Modality Selection & Recall
+   ══════════════════════════════════════════════════════════ */
 function Activity2({ onGlobalClick, onComplete }) {
   const [activeTab, setActiveTab] = useState(null);
   const [showQuiz, setShowQuiz] = useState(false);
   const [quizAnswers, setQuizAnswers] = useState([null, null, null]);
-  const [quizDone, setQuizDone] = useState(false);
-  const [canQuiz, setCanQuiz] = useState(false);
-  const [countdown, setCountdown] = useState(15);
+  const [countdown, setCountdown] = useState(10); // 10s study requirement
 
   const tabEntryRef = useRef(0);
   const timesRef = useRef({ tText: 0, tVisual: 0, tAudio: 0 });
@@ -825,10 +1177,16 @@ function Activity2({ onGlobalClick, onComplete }) {
   const quizQuestionStartRef = useRef(0);
 
   useEffect(() => {
-    if (countdown <= 0) { setCanQuiz(true); return; }
+    if (countdown <= 0) return;
     const timer = setTimeout(() => setCountdown(c => c - 1), 1000);
     return () => clearTimeout(timer);
   }, [countdown]);
+
+  useEffect(() => {
+    if (showQuiz && quizQuestionStartRef.current === 0) {
+      quizQuestionStartRef.current = Date.now();
+    }
+  }, [showQuiz]);
 
   const accumulateTime = () => {
     if (!activeTab || tabEntryRef.current === 0) return;
@@ -853,248 +1211,317 @@ function Activity2({ onGlobalClick, onComplete }) {
     audioTelemetryRef.current.percent = Math.max(audioTelemetryRef.current.percent, data.percent);
   };
 
-  const handleDiagramInteraction = (interactions, zoomDelta) => {
+  const handleDiagramInteraction = (interactions, isZoom) => {
     diagramTelemetryRef.current.interactions = interactions;
-    if (zoomDelta) diagramTelemetryRef.current.zooms++;
+    if (isZoom) diagramTelemetryRef.current.zooms++;
   };
 
-  const handleQuizAnswer = (qIndex, optIndex) => {
+  const handleQuizAnswer = useCallback((qIndex, optIndex) => {
     if (quizQuestionStartRef.current > 0) {
       quizTimesRef.current.push(Date.now() - quizQuestionStartRef.current);
     }
-    const newAnswers = [...quizAnswers];
-    newAnswers[qIndex] = optIndex;
-    setQuizAnswers(newAnswers);
+    setQuizAnswers(prev => {
+      const next = [...prev];
+      next[qIndex] = optIndex;
+      return next;
+    });
     quizQuestionStartRef.current = Date.now();
-  };
+  }, []);
 
   const submitQuiz = () => {
     accumulateTime();
     let correct = 0;
     QUIZ_QUESTIONS.forEach((q, i) => { if (quizAnswers[i] === q.answer) correct++; });
-    setQuizDone(true);
-    const avgResp = quizTimesRef.current.length > 0 ? quizTimesRef.current.reduce((a, b) => a + b, 0) / quizTimesRef.current.length : 0;
-    setTimeout(() => {
-      onComplete({
-        firstChoice: firstChoiceRef.current,
-        tText: timesRef.current.tText,
-        tVisual: timesRef.current.tVisual,
-        tAudio: timesRef.current.tAudio,
-        tabSwitches: switchesRef.current,
-        recallCorrect: correct,
-        audioStarted: audioTelemetryRef.current.started,
-        audioCompleted: audioTelemetryRef.current.completed,
-        audioPlayCount: audioTelemetryRef.current.playCount,
-        audioCompletionPercent: audioTelemetryRef.current.percent,
-        diagramZooms: diagramTelemetryRef.current.zooms,
-        diagramInteractions: diagramTelemetryRef.current.interactions,
-        averageResponseTime: avgResp,
-        questionHesitationTime: quizTimesRef.current,
-      });
-    }, 1000);
+    const avgResp = quizTimesRef.current.length > 0 ? quizTimesRef.current.reduce((a, b) => a + b, 0) / quizTimesRef.current.length : 2500;
+
+    onComplete({
+      firstChoice: firstChoiceRef.current || 'text',
+      tText: timesRef.current.tText,
+      tVisual: timesRef.current.tVisual,
+      tAudio: timesRef.current.tAudio,
+      tabSwitches: switchesRef.current,
+      recallCorrect: correct,
+      audioStarted: audioTelemetryRef.current.started,
+      audioCompleted: audioTelemetryRef.current.completed,
+      audioPlayCount: audioTelemetryRef.current.playCount,
+      audioCompletionPercent: audioTelemetryRef.current.percent,
+      diagramZooms: diagramTelemetryRef.current.zooms,
+      diagramInteractions: diagramTelemetryRef.current.interactions,
+      averageResponseTime: avgResp,
+      questionHesitationTime: quizTimesRef.current,
+    });
   };
 
-  const tabClass = (tab) => `flex-1 py-3 px-4 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
-    activeTab === tab ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-  }`;
-
   if (showQuiz) {
-    if (quizQuestionStartRef.current === 0) quizQuestionStartRef.current = Date.now();
+    const allAnswered = quizAnswers.every(a => a !== null);
     return (
-      <div className="min-h-screen bg-slate-50 p-6" onClick={onGlobalClick}>
-        <div className="max-w-2xl mx-auto">
-          <h2 className="text-xl font-bold text-slate-800 mb-1">Recall Quiz — Luma Crystal Energy System</h2>
-          <p className="text-sm text-slate-500 mb-6">Answer from memory. No going back to the content.</p>
-          <div className="space-y-5">
+      <div className="min-h-screen bg-surface p-6 select-none" onClick={onGlobalClick}>
+        <div className="max-w-2xl mx-auto space-y-6">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-on-surface">Recall Check — Luma Crystal System</h2>
+            <p className="text-sm text-on-surface-variant mt-1">Answer from memory. No trick questions.</p>
+          </div>
+
+          <div className="space-y-4">
             {QUIZ_QUESTIONS.map((q, qi) => (
-              <div key={qi} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-                <p className="font-semibold text-slate-800 mb-3">{qi + 1}. {q.q}</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {q.options.map((opt, oi) => (
-                    <button key={oi} data-interactive="true" onClick={() => handleQuizAnswer(qi, oi)}
-                      className={`py-2.5 px-4 rounded-xl text-sm font-medium transition-all text-left ${
-                        quizAnswers[qi] === oi ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200'
-                      }`}>{opt}</button>
-                  ))}
+              <div key={qi} className="bg-white rounded-3xl border border-outline-variant/40 p-6 shadow-soft space-y-3">
+                <p className="font-bold text-on-surface text-sm">{qi + 1}. {q.q}</p>
+                <div className="space-y-2">
+                  {q.options.map((opt, oi) => {
+                    const isSelected = quizAnswers[qi] === oi;
+                    return (
+                      <button
+                        key={oi}
+                        data-interactive="true"
+                        onClick={() => handleQuizAnswer(qi, oi)}
+                        className={`w-full text-left px-5 py-3 rounded-2xl text-sm font-semibold transition-all border ${
+                          isSelected
+                            ? 'bg-primary-fixed/30 border-brand-orange text-primary shadow-xs ring-2 ring-brand-orange/20'
+                            : 'bg-surface-container-low/60 hover:bg-surface-container text-on-surface border-outline-variant/40'
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             ))}
           </div>
-          <button data-interactive="true" onClick={submitQuiz}
-            disabled={quizAnswers.includes(null) || quizDone}
-            className={`w-full mt-6 py-3 rounded-xl font-semibold text-white transition-all ${
-              quizAnswers.includes(null) || quizDone ? 'bg-slate-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 shadow-md'
-            }`}>{quizDone ? 'Submitted ✓' : 'Submit Answers'}</button>
+
+          <button
+            data-interactive="true"
+            onClick={submitQuiz}
+            disabled={!allAnswered}
+            className={`w-full py-4 rounded-full font-semibold text-white transition-all shadow-card ${
+              allAnswered ? 'bg-brand-orange hover:bg-brand-orange-hover hover:-translate-y-0.5' : 'bg-surface-container-high text-on-surface-variant/40 cursor-not-allowed'
+            }`}
+          >
+            Submit Answers & Continue
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6" onClick={onGlobalClick}>
-      <div className="max-w-3xl mx-auto">
-        <h2 className="text-xl font-bold text-slate-800 mb-1">Modality Preference Challenge</h2>
-        <p className="text-sm text-slate-500 mb-5">Explore the Luma Crystal Energy System using your preferred format. You'll be quizzed from memory.</p>
-
-        <div className="flex gap-2 mb-5">
-          <button data-interactive="true" onClick={() => switchTab('text')} className={tabClass('text')}><BookOpen className="w-4 h-4" /> Text</button>
-          <button data-interactive="true" onClick={() => switchTab('diagram')} className={tabClass('diagram')}><Eye className="w-4 h-4" /> Diagram</button>
-          <button data-interactive="true" onClick={() => switchTab('audio')} className={tabClass('audio')}><Headphones className="w-4 h-4" /> Audio</button>
+    <div className="min-h-screen bg-surface p-6 select-none" onClick={onGlobalClick}>
+      <div className="max-w-3xl mx-auto space-y-6">
+        <div>
+          <h2 className="text-xl font-bold text-on-surface">Activity 2: Modality Preference</h2>
+          <p className="text-sm text-on-surface-variant mt-1">
+            Choose how you prefer to learn about the <strong>Luma Crystal Energy System</strong>. You can read, view the diagram, or listen to audio.
+          </p>
         </div>
 
+        {/* Modality Tabs */}
+        <div className="grid grid-cols-3 gap-3">
+          <button data-interactive="true" onClick={() => switchTab('text')}
+            className={`py-3.5 px-4 rounded-full font-semibold text-sm transition-all border flex items-center justify-center gap-2 ${
+              activeTab === 'text' ? 'bg-brand-orange text-white border-brand-orange shadow-card ring-2 ring-brand-orange/20' : 'bg-white text-on-surface border-outline-variant/60 hover:bg-surface-container-low shadow-xs'
+            }`}>
+            <BookOpen className="w-4 h-4" /> 1. Text Summary
+          </button>
+          <button data-interactive="true" onClick={() => switchTab('diagram')}
+            className={`py-3.5 px-4 rounded-full font-semibold text-sm transition-all border flex items-center justify-center gap-2 ${
+              activeTab === 'diagram' ? 'bg-brand-orange text-white border-brand-orange shadow-card ring-2 ring-brand-orange/20' : 'bg-white text-on-surface border-outline-variant/60 hover:bg-surface-container-low shadow-xs'
+            }`}>
+            <Eye className="w-4 h-4" /> 2. Visual Diagram
+          </button>
+          <button data-interactive="true" onClick={() => switchTab('audio')}
+            className={`py-3.5 px-4 rounded-full font-semibold text-sm transition-all border flex items-center justify-center gap-2 ${
+              activeTab === 'audio' ? 'bg-brand-orange text-white border-brand-orange shadow-card ring-2 ring-brand-orange/20' : 'bg-white text-on-surface border-outline-variant/60 hover:bg-surface-container-low shadow-xs'
+            }`}>
+            <Headphones className="w-4 h-4" /> 3. Audio Narration
+          </button>
+        </div>
+
+        {/* Tab Content Display */}
         {!activeTab && (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12 text-center">
-            <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-500 font-medium">Select a tab above to begin learning about the Luma Crystal Energy System.</p>
+          <div className="bg-white rounded-3xl border border-outline-variant/40 p-12 text-center shadow-soft">
+            <Volume2 className="w-12 h-12 text-brand-orange mx-auto mb-3 animate-pulse" />
+            <h3 className="text-base font-bold text-on-surface mb-1">Pick a Learning Modality</h3>
+            <p className="text-xs text-on-surface-variant">Select any tab above to begin studying the 3 crystal components.</p>
           </div>
         )}
 
         {activeTab === 'text' && (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-            <h3 className="text-lg font-bold text-slate-800 mb-3">📖 Luma Crystal Energy System - Text</h3>
-            <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{LUMA_TEXT}</div>
+          <div className="bg-white rounded-3xl border border-outline-variant/40 p-6 shadow-soft space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-outline-variant/30">
+              <h3 className="font-bold text-on-surface text-sm flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-brand-orange" /> Technical Reading Passage
+              </h3>
+            </div>
+            <p className="text-sm text-on-surface leading-relaxed whitespace-pre-wrap font-sans">{LUMA_TEXT}</p>
           </div>
         )}
 
         {activeTab === 'diagram' && (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-            <h3 className="text-lg font-bold text-slate-800 mb-3">🔬 Luma Crystal Energy System — Diagram</h3>
+          <div className="bg-white rounded-3xl border border-outline-variant/40 p-6 shadow-soft space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-outline-variant/30">
+              <h3 className="font-bold text-on-surface text-sm flex items-center gap-2">
+                <Eye className="w-4 h-4 text-brand-orange" /> Interactive Spatial Diagram
+              </h3>
+            </div>
             <LumaCrystalSVG onInteraction={handleDiagramInteraction} />
           </div>
         )}
 
         {activeTab === 'audio' && (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-            <h3 className="text-lg font-bold text-slate-800 mb-3">🎧 Luma Crystal Energy System — Audio</h3>
-            <AudioPlayer script={LUMA_AUDIO_SCRIPT} onTelemetry={handleAudioTelemetry} />
-            <div className="mt-4 bg-slate-50 rounded-xl p-4 border border-slate-200">
-              <p className="text-xs text-slate-400 italic">Listen to the narration using the player above. Focus on understanding the three key components.</p>
+          <div className="bg-white rounded-3xl border border-outline-variant/40 p-6 shadow-soft space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-outline-variant/30">
+              <h3 className="font-bold text-on-surface text-sm flex items-center gap-2">
+                <Headphones className="w-4 h-4 text-brand-orange" /> Audio Narration Engine
+              </h3>
+            </div>
+            <AudioNarrationPlayer script={LUMA_AUDIO_SCRIPT} onTelemetry={handleAudioTelemetry} />
+            <div className="text-xs text-on-surface-variant bg-surface-container-low p-4 rounded-2xl border border-outline-variant/40">
+              <span className="font-bold text-on-surface">Audio Transcript Preview:</span> {LUMA_AUDIO_SCRIPT.slice(0, 160)}...
             </div>
           </div>
         )}
 
         {activeTab && (
-          <button data-interactive="true" onClick={() => { accumulateTime(); setShowQuiz(true); }}
-            disabled={!canQuiz}
-            className={`w-full mt-5 py-3 rounded-xl font-semibold text-white transition-all ${
-              canQuiz ? 'bg-blue-600 hover:bg-blue-700 shadow-md' : 'bg-slate-300 cursor-not-allowed'
-            }`}>{canQuiz ? 'Take Quiz' : `Study for ${countdown}s more before quiz`}</button>
+          <button
+            data-interactive="true"
+            onClick={() => { accumulateTime(); setShowQuiz(true); }}
+            disabled={countdown > 0}
+            className={`w-full py-4 rounded-full font-semibold text-white transition-all shadow-card ${
+              countdown <= 0 ? 'bg-brand-orange hover:bg-brand-orange-hover hover:-translate-y-0.5' : 'bg-surface-container-high text-on-surface-variant/40 cursor-not-allowed'
+            }`}
+          >
+            {countdown <= 0 ? 'Ready for Recall Check →' : `Study for ${countdown}s more before quiz`}
+          </button>
         )}
       </div>
     </div>
   );
 }
 
-
+/* ══════════════════════════════════════════════════════════
+   ACTIVITY 3: Analogies & Motivation Calibration
+   ══════════════════════════════════════════════════════════ */
 function Activity3({ onGlobalClick, onComplete }) {
   const [subPhase, setSubPhase] = useState('analogies');
   const [analogyIndex, setAnalogyIndex] = useState(0);
   const [correctAnalogies, setCorrectAnalogies] = useState(0);
 
-  const [motivationRound, setMotivationRound] = useState('normal');
-  const [mQuestionIndex, setMQuestionIndex] = useState(0);
+  const [motivationRound, setMotivationRound] = useState('normal'); // 'normal' | 'reward'
+  const [taskIndex, setTaskIndex] = useState(0);
   const [xp, setXp] = useState(0);
   const [streak, setStreak] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [showXpPopup, setShowXpPopup] = useState(false);
-  const [showBadge, setShowBadge] = useState(null);
 
   const normalTimesRef = useRef([]);
   const rewardTimesRef = useRef([]);
-  const questionStartRef = useRef(Date.now());
-  const activityStartRef = useRef(Date.now());
+  const questionStartRef = useRef(0);
+  const activityStartRef = useRef(0);
   const totalQuestionsRef = useRef(0);
   const allHesitationRef = useRef([]);
-  const analogyStartRef = useRef(Date.now());
+  const analogyStartRef = useRef(0);
 
   useEffect(() => {
-    activityStartRef.current = Date.now();
-    analogyStartRef.current = Date.now();
+    const now = Date.now();
+    questionStartRef.current = now;
+    activityStartRef.current = now;
+    analogyStartRef.current = now;
   }, []);
 
-  const handleAnalogyAnswer = (optIndex) => {
+  const handleAnalogyAnswer = useCallback((optIndex) => {
     const hesitation = Date.now() - analogyStartRef.current;
     allHesitationRef.current.push(hesitation);
     if (optIndex === ANALOGY_QUESTIONS[analogyIndex].answer) {
       setCorrectAnalogies(c => c + 1);
     }
     totalQuestionsRef.current++;
-    if (analogyIndex < 2) {
+
+    if (analogyIndex < ANALOGY_QUESTIONS.length - 1) {
       setAnalogyIndex(i => i + 1);
       analogyStartRef.current = Date.now();
     } else {
       setSubPhase('motivation_intro');
     }
-  };
+  }, [analogyIndex]);
 
-  const startMotivation = () => {
+  const startMotivationRounds = () => {
     questionStartRef.current = Date.now();
     setSubPhase('motivation');
   };
 
-  const questions = motivationRound === 'normal' ? SYMBOL_QUESTIONS_NORMAL : SYMBOL_QUESTIONS_REWARD;
+  const tasks = motivationRound === 'normal' ? PATTERN_TASKS_BASELINE : PATTERN_TASKS_REWARD;
 
-  const handleMotivationAnswer = (optIndex) => {
+  const handleMotivationAnswer = useCallback((optIndex) => {
     const elapsed = Date.now() - questionStartRef.current;
     allHesitationRef.current.push(elapsed);
     totalQuestionsRef.current++;
+
+    const isCorrect = optIndex === tasks[taskIndex].answer;
 
     if (motivationRound === 'normal') {
       normalTimesRef.current.push(elapsed);
     } else {
       rewardTimesRef.current.push(elapsed);
-      const isCorrect = optIndex === questions[mQuestionIndex].answer;
       if (isCorrect) {
         setXp(x => x + 50);
         setStreak(s => s + 1);
-        setShowXpPopup(true);
-        setTimeout(() => setShowXpPopup(false), 1200);
         setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 1500);
-        if (mQuestionIndex === 0) { setShowBadge('streak'); setTimeout(() => setShowBadge(null), 2000); }
-        if (mQuestionIndex === questions.length - 1) { setShowBadge('level'); setTimeout(() => setShowBadge(null), 2000); }
+        setTimeout(() => setShowConfetti(false), 1200);
       } else {
         setStreak(0);
       }
     }
 
-    if (mQuestionIndex < questions.length - 1) {
-      setMQuestionIndex(i => i + 1);
+    if (taskIndex < tasks.length - 1) {
+      setTaskIndex(i => i + 1);
       questionStartRef.current = Date.now();
     } else if (motivationRound === 'normal') {
       setMotivationRound('reward');
-      setMQuestionIndex(0);
+      setTaskIndex(0);
       questionStartRef.current = Date.now();
     } else {
-      const avgNormal = normalTimesRef.current.reduce((a, b) => a + b, 0) / normalTimesRef.current.length;
-      const avgReward = rewardTimesRef.current.reduce((a, b) => a + b, 0) / rewardTimesRef.current.length;
-      const actDuration = (Date.now() - activityStartRef.current) / 1000;
+      // Completed both rounds
+      const avgNormal = normalTimesRef.current.length > 0 ? normalTimesRef.current.reduce((a, b) => a + b, 0) / normalTimesRef.current.length : 2500;
+      const avgReward = rewardTimesRef.current.length > 0 ? rewardTimesRef.current.reduce((a, b) => a + b, 0) / rewardTimesRef.current.length : 1800;
+      const duration = (Date.now() - activityStartRef.current) / 1000;
       const totalHesitation = allHesitationRef.current;
-      const avgAll = totalHesitation.length > 0 ? totalHesitation.reduce((a, b) => a + b, 0) / totalHesitation.length : 0;
+      const avgAll = totalHesitation.length > 0 ? totalHesitation.reduce((a, b) => a + b, 0) / totalHesitation.length : 2000;
+
       onComplete({
         correctAnalogies,
         speedBase: avgNormal,
         speedReward: avgReward,
-        activity3Speed: actDuration > 0 ? totalQuestionsRef.current / actDuration : 0,
+        activity3Speed: duration > 0 ? totalQuestionsRef.current / duration : 0.4,
         averageResponseTime: avgAll,
         questionHesitationTime: totalHesitation,
       });
     }
-  };
+  }, [correctAnalogies, motivationRound, onComplete, taskIndex, tasks]);
 
+  /* Sub-phase 1: Conceptual Analogies */
   if (subPhase === 'analogies') {
-    const current = ANALOGY_QUESTIONS[analogyIndex];
+    const currentQ = ANALOGY_QUESTIONS[analogyIndex];
     return (
-      <div className="min-h-screen bg-slate-50 p-6" onClick={onGlobalClick}>
-        <div className="max-w-2xl mx-auto">
-          <h2 className="text-xl font-bold text-slate-800 mb-1">Abstract Reasoning</h2>
-          <p className="text-sm text-slate-500 mb-6">Question {analogyIndex + 1} of 3</p>
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-            <p className="text-lg font-bold text-slate-800 mb-5">{current.prompt}</p>
-            <div className="space-y-2">
-              {current.options.map((opt, oi) => (
-                <button key={oi} data-interactive="true" onClick={() => handleAnalogyAnswer(oi)}
-                  className="w-full py-3 px-5 rounded-xl text-left font-medium text-slate-700 bg-slate-50 hover:bg-blue-50 hover:text-blue-700 border border-slate-200 hover:border-blue-300 transition-all">
+      <div className="min-h-screen bg-surface p-6 select-none" onClick={onGlobalClick}>
+        <div className="max-w-2xl mx-auto space-y-6">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-primary">Cognitive Domain Mapping</span>
+            <h2 className="text-xl font-bold text-on-surface mt-1">Conceptual Analogy ({analogyIndex + 1} of 3)</h2>
+            <p className="text-sm text-on-surface-variant">Pick the relationship that best matches the conceptual pattern.</p>
+          </div>
+
+          <div className="bg-white rounded-3xl border border-outline-variant/40 p-8 shadow-soft space-y-6">
+            <div className="p-4 bg-surface-container-low border border-primary/20 rounded-2xl text-center">
+              <span className="text-lg font-bold text-on-surface">{currentQ.prompt}</span>
+            </div>
+
+            <div className="space-y-3">
+              {currentQ.options.map((opt, i) => (
+                <button
+                  key={i}
+                  data-interactive="true"
+                  onClick={() => handleAnalogyAnswer(i)}
+                  className="w-full p-4 text-left rounded-2xl border border-outline-variant/60 bg-white hover:bg-surface-container-low hover:border-brand-orange font-semibold text-on-surface text-sm transition-all shadow-xs"
+                >
                   {opt}
                 </button>
               ))}
@@ -1105,36 +1532,51 @@ function Activity3({ onGlobalClick, onComplete }) {
     );
   }
 
+  /* Sub-phase 2: Transition into Motivation Calibration */
   if (subPhase === 'motivation_intro') {
     return (
-      <div className="min-h-screen bg-slate-50 p-6 flex items-center justify-center" onClick={onGlobalClick}>
-        <div className="max-w-md text-center bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
-          <Zap className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-slate-800 mb-2">Speed Challenge</h2>
-          <p className="text-sm text-slate-500 mb-6">Match 4 symbol sequences as fast as you can. Two rounds.</p>
-          <button data-interactive="true" onClick={startMotivation}
-            className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-md transition-all">Start</button>
+      <div className="min-h-screen bg-surface flex items-center justify-center p-6 select-none" onClick={onGlobalClick}>
+        <div className="max-w-md w-full bg-white rounded-3xl border border-outline-variant/40 p-8 text-center shadow-soft space-y-4">
+          <Zap className="w-12 h-12 text-brand-orange mx-auto" />
+          <h2 className="text-2xl font-bold text-on-surface">Processing Speed & Motivation Calibration</h2>
+          <p className="text-xs text-on-surface-variant leading-relaxed">
+            You will now see a few rapid symbol sequences. Select the matching sequence as quickly as possible. We will compare your performance in a neutral layout versus a reward layout.
+          </p>
+          <button data-interactive="true" onClick={startMotivationRounds}
+            className="w-full py-4 bg-brand-orange hover:bg-brand-orange-hover text-white font-semibold rounded-full shadow-card transition-all hover:-translate-y-0.5">
+            Begin Speed Round →
+          </button>
         </div>
       </div>
     );
   }
 
-  const currentQ = questions[mQuestionIndex];
+  /* Sub-phase 3: Neutral Round vs Reward Round */
+  const currentTask = tasks[taskIndex];
   const isReward = motivationRound === 'reward';
-  const progressPercent = ((mQuestionIndex + 1) / questions.length) * 100;
 
   if (!isReward) {
     return (
-      <div className="min-h-screen bg-slate-50 p-6" onClick={onGlobalClick}>
-        <div className="max-w-2xl mx-auto">
-          <h2 className="text-xl font-bold text-slate-800 mb-1">Standard Round</h2>
-          <p className="text-sm text-slate-500 mb-5">Question {mQuestionIndex + 1} of {questions.length}</p>
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-            <p className="text-2xl font-bold text-slate-800 mb-5 tracking-widest text-center">{currentQ.prompt}</p>
-            <div className="space-y-2">
-              {currentQ.options.map((opt, oi) => (
-                <button key={oi} data-interactive="true" onClick={() => handleMotivationAnswer(oi)}
-                  className="w-full py-3 px-5 rounded-xl text-left font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all text-xl tracking-widest">
+      <div className="min-h-screen bg-surface p-6 select-none" onClick={onGlobalClick}>
+        <div className="max-w-xl mx-auto space-y-6">
+          <div className="text-center">
+            <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant/60">Baseline Focus Round</span>
+            <h2 className="text-xl font-bold text-on-surface mt-1">Match Sequence ({taskIndex + 1} of {tasks.length})</h2>
+          </div>
+
+          <div className="bg-white rounded-3xl border border-outline-variant/40 p-8 text-center shadow-soft space-y-6">
+            <div className="text-2xl tracking-widest font-mono text-on-surface p-4 bg-surface-container-low rounded-2xl border border-outline-variant/30">
+              {currentTask.prompt.replace('Match the target symbol sequence: ', '')}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {currentTask.options.map((opt, oi) => (
+                <button
+                  key={oi}
+                  data-interactive="true"
+                  onClick={() => handleMotivationAnswer(oi)}
+                  className="py-4 px-3 rounded-2xl bg-surface-container-low/60 border border-outline-variant/60 hover:bg-surface-container hover:border-brand-orange text-on-surface font-mono text-lg tracking-widest font-bold transition-all shadow-xs"
+                >
                   {opt}
                 </button>
               ))}
@@ -1145,84 +1587,50 @@ function Activity3({ onGlobalClick, onComplete }) {
     );
   }
 
+  /* Round 2: Reward / Gamified Round */
   return (
-    <div className="min-h-screen p-6 relative overflow-hidden" onClick={onGlobalClick}
-      style={{ background: 'linear-gradient(135deg, #fef3c7 0%, #fffbeb 30%, #fef9c3 60%, #fefce8 100%)' }}>
-
+    <div className="min-h-screen p-6 relative overflow-hidden select-none" onClick={onGlobalClick}
+      style={{ background: 'linear-gradient(135deg, #fef3c7 0%, #fffbeb 40%, #fefce8 100%)' }}>
       {showConfetti && <ConfettiBurst />}
-      {showXpPopup && <XpPopup amount={50} />}
 
-      {showBadge === 'streak' && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none" style={{ animation: 'badgeIn 0.5s ease-out forwards' }}>
-          <div className="bg-gradient-to-r from-amber-400 to-orange-500 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3">
-            <Flame className="w-6 h-6" /><span className="font-bold text-lg">🔥 Achievement Unlocked: Hot Streak!</span>
+      <div className="max-w-xl mx-auto space-y-6">
+        <div className="flex items-center justify-between bg-gradient-to-r from-amber-500 to-orange-500 p-4 rounded-2xl text-white shadow-md">
+          <div className="flex items-center gap-2">
+            <Star className="w-5 h-5 fill-white text-white" />
+            <span className="font-extrabold text-lg">{xp} XP</span>
           </div>
-        </div>
-      )}
-
-      {showBadge === 'level' && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none" style={{ animation: 'badgeIn 0.5s ease-out forwards' }}>
-          <div className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3">
-            <Award className="w-6 h-6" /><span className="font-bold text-lg">⬆️ Level Up! Pattern Master!</span>
-          </div>
-        </div>
-      )}
-
-      <style>{`
-        @keyframes badgeIn { 0% { transform: translate(-50%, -40px) scale(0.7); opacity: 0; } 50% { transform: translate(-50%, 0px) scale(1.1); opacity: 1; } 100% { transform: translate(-50%, 0px) scale(1); opacity: 1; } }
-        @keyframes glowPulse { 0%, 100% { box-shadow: 0 0 15px rgba(245,158,11,0.3), 0 0 30px rgba(245,158,11,0.1); } 50% { box-shadow: 0 0 25px rgba(245,158,11,0.5), 0 0 50px rgba(245,158,11,0.2); } }
-        @keyframes streakBounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
-        @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
-      `}</style>
-
-      <div className="max-w-2xl mx-auto relative z-10">
-        <div className="mb-5 space-y-3">
-          <div className="flex items-center justify-between rounded-2xl px-5 py-3 shadow-lg border border-amber-300"
-            style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', animation: 'glowPulse 2s ease-in-out infinite' }}>
-            <div className="flex items-center gap-3">
-              <Star className="w-6 h-6 text-white drop-shadow" />
-              <span className="font-extrabold text-white text-xl">{xp} XP</span>
-            </div>
-            <div className="flex items-center gap-4">
-              {streak > 0 && (
-                <div className="flex items-center gap-1.5" style={{ animation: 'streakBounce 0.6s ease-in-out' }}>
-                  <Flame className="w-5 h-5 text-white" /><span className="font-bold text-white text-sm">{streak} Streak!</span>
-                </div>
-              )}
-              <div className="flex items-center gap-1.5">
-                <Trophy className="w-5 h-5 text-white" /><span className="text-sm font-bold text-white">+50 XP per correct!</span>
+          <div className="flex items-center gap-3">
+            {streak > 0 && (
+              <div className="flex items-center gap-1 bg-white/20 px-3 py-1 rounded-full text-xs font-bold">
+                <Flame className="w-4 h-4 text-amber-200" /> {streak} Streak!
               </div>
-            </div>
-          </div>
-          <div className="relative w-full bg-amber-200 rounded-full h-4 overflow-hidden shadow-inner">
-            <div className="h-full rounded-full transition-all duration-500 ease-out" style={{ width: `${progressPercent}%`, background: 'linear-gradient(90deg, #f59e0b, #ef4444, #8b5cf6)' }}>
-              <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)', animation: 'shimmer 1.5s infinite' }} />
-            </div>
+            )}
+            <div className="text-xs font-bold bg-white/20 px-3 py-1 rounded-full">+50 XP Per Match!</div>
           </div>
         </div>
 
-        <h2 className="text-xl font-extrabold text-amber-800 mb-1 flex items-center gap-2">
-          <Zap className="w-5 h-5 text-amber-600" /> ⚡ Reward Round
-        </h2>
-        <p className="text-sm text-amber-700 mb-5 font-medium">Question {mQuestionIndex + 1} of {questions.length}</p>
+        <div className="text-center">
+          <span className="text-xs font-bold uppercase tracking-wider text-amber-800">⚡ Reward Accelerated Round</span>
+          <h2 className="text-xl font-extrabold text-amber-950 mt-1">Match Sequence ({taskIndex + 1} of {tasks.length})</h2>
+        </div>
 
-        <div className="rounded-2xl shadow-xl p-6 border-2 border-amber-300"
-          style={{ background: 'linear-gradient(145deg, #ffffff 0%, #fffbeb 50%, #fef3c7 100%)', animation: 'glowPulse 3s ease-in-out infinite' }}>
-          <p className="text-2xl font-bold text-slate-800 mb-5 tracking-widest text-center">{currentQ.prompt}</p>
-          <div className="space-y-2">
-            {currentQ.options.map((opt, oi) => (
-              <button key={oi} data-interactive="true" onClick={() => handleMotivationAnswer(oi)}
-                className="w-full py-3.5 px-5 rounded-xl text-left font-semibold transition-all border-2 bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-900 border-amber-200 hover:border-amber-400 hover:from-amber-100 hover:to-yellow-100 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] text-xl tracking-widest">
+        <div className="bg-white/95 backdrop-blur rounded-3xl border-2 border-amber-300 p-8 text-center shadow-xl space-y-6">
+          <div className="text-3xl tracking-widest font-mono text-on-surface p-5 bg-amber-50 rounded-2xl border border-amber-200 font-bold">
+            {currentTask.prompt.replace('Match the target symbol sequence: ', '')}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {currentTask.options.map((opt, oi) => (
+              <button
+                key={oi}
+                data-interactive="true"
+                onClick={() => handleMotivationAnswer(oi)}
+                className="py-4 px-3 rounded-2xl bg-amber-50/70 border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-100 text-amber-950 font-mono text-xl tracking-widest font-extrabold transition-all shadow-sm active:scale-95"
+              >
                 {opt}
               </button>
             ))}
           </div>
-        </div>
-
-        <div className="mt-5 text-center">
-          <p className="text-xs text-amber-600 font-medium flex items-center justify-center gap-1.5">
-            <PartyPopper className="w-3.5 h-3.5" /> Earn XP, unlock badges, and keep your streak alive!
-          </p>
         </div>
       </div>
     </div>

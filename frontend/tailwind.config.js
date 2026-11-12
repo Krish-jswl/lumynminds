@@ -98,14 +98,14 @@ export default {
           variant: '#dec0b3',
         },
 
-        // Brand-level design system overrides
+        // Brand-level design system overrides (calibrated to warm earthy terracotta)
         brand: {
           orange: '#F97D36',
-          'orange-hover': '#ffb692',
-          heading: '#0F172A',
-          body: '#64748B',
-          border: '#E2E8F0',
-          'bg-secondary': '#F8FAFC',
+          'orange-hover': '#ea580c',
+          heading: '#241914',
+          body: '#574238',
+          border: '#dec0b3',
+          'bg-secondary': '#fff1eb',
         },
       },
       fontSize: {
@@ -124,6 +124,8 @@ export default {
         md: '0.75rem',
         lg: '1rem',
         xl: '1.5rem',
+        '2xl': '1.75rem',
+        '3xl': '2rem',
         full: '9999px',
       },
       spacing: {
@@ -140,10 +142,10 @@ export default {
         'container': '1280px',
       },
       boxShadow: {
-        'soft': '0 25px 50px -12px rgba(0, 0, 0, 0.05)',
-        'card': '0 4px 24px -4px rgba(0, 0, 0, 0.08)',
-        'card-hover': '0 8px 32px -4px rgba(0, 0, 0, 0.12)',
-        'glow': '0 0 60px 20px rgba(249, 125, 54, 0.12)',
+        'soft': '0 20px 40px -15px rgba(159, 66, 0, 0.07)',
+        'card': '0 4px 20px -2px rgba(159, 66, 0, 0.06)',
+        'card-hover': '0 8px 30px -4px rgba(159, 66, 0, 0.12)',
+        'glow': '0 0 60px 20px rgba(249, 125, 54, 0.15)',
       },
       animation: {
         'fade-in': 'fadeIn 0.8s ease-out forwards',

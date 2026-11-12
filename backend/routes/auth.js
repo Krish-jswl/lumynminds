@@ -3,8 +3,13 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const User = require('../models/User');
+const Student = require('../models/Student');
 
 const router = express.Router();
+
+function escapeRegex(str) {
+  return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 // =========================
 // Teacher Register
@@ -283,10 +288,25 @@ router.get('/students', async (req, res) => {
     // Find all users who are students AND belong to the requested institute
     const students = await User.find({
       role: 'student',
-      institute: { $regex: new RegExp(`^${institute}$`, 'i') } // Case-insensitive!
-    }).select('-password');
+      institute: { $regex: new RegExp(`^${escapeRegex(institute.trim())}$`, 'i') } // Case-insensitive!
+    }).select('-password').lean();
 
-    res.json({ success: true, students });
+    const studentIds = students.map(s => String(s._id));
+    const profiles = await Student.find({ studentId: { $in: studentIds } })
+      .select('studentId assessmentCount lastAssessmentDate')
+      .lean();
+    const profileMap = new Map(profiles.map(p => [p.studentId, p]));
+
+    const enrichedStudents = students.map(s => {
+      const profile = profileMap.get(String(s._id));
+      return {
+        ...s,
+        assessmentCount: profile?.assessmentCount || 0,
+        lastAssessmentDate: profile?.lastAssessmentDate || null
+      };
+    });
+
+    res.json({ success: true, students: enrichedStudents });
 
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
