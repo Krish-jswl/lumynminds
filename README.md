@@ -1,4 +1,4 @@
-# LumynMinds 🧠✨
+# LumynMinds 
 ### Zero-Latency Adaptive Cognitive Learning Infrastructure for Neurodivergent Learners
 
 [![React](https://img.shields.io/badge/React-19.2-blue?logo=react&logoColor=white)](https://react.dev/)
@@ -16,7 +16,7 @@
 
 ---
 
-## 📑 Table of Contents
+##  Table of Contents
 1. [Core Features](#-core-features)
 2. [The 12 Cognitive Neuro-Variability (CNV) Dimensions](#-the-12-cognitive-neuro-variability-cnv-dimensions)
 3. [Cognitive Assessment & Calibration Engine](#-cognitive-assessment--calibration-engine)
@@ -32,7 +32,7 @@
 
 ---
 
-## 🚀 Core Features
+##  Core Features
 
 * **Non-Clinical Cognitive Calibration:** An engaging, 3-to-4 minute gamified micro-assessment that measures sensory vulnerability, working memory capacity, multi-modal affinity, and reward responsiveness without clinical anxiety.
 * **Continuous Behavioral Telemetry:** Background logging of rapid/erratic clicks, idle freeze states, window focus blurs, and reread regressions to calculate session validity and cognitive stamina.
@@ -45,7 +45,7 @@
 
 ---
 
-## 🧬 The 12 Cognitive Neuro-Variability (CNV) Dimensions
+##  The 12 Cognitive Neuro-Variability (CNV) Dimensions
 
 Each student's profile is quantified across 12 continuous dimensions. Each dimension has a `value` ($0.0 \to 1.0$) and a statistical `confidence` score ($0.0 \to 1.0$) updated via Exponential Moving Average (EMA):
 
@@ -69,7 +69,7 @@ $$\text{Confidence}_{\text{new}} = \text{Confidence}_{\text{old}} + (0.20 \times
 
 ---
 
-## 🎯 Cognitive Assessment & Calibration Engine
+##  Cognitive Assessment & Calibration Engine
 
 The assessment (`Assessment.jsx`) is structured into 3 gamified micro-modules:
 
@@ -119,20 +119,20 @@ The assessment (`Assessment.jsx`) is structured into 3 gamified micro-modules:
 
 ---
 
-## 📖 Multi-Modal Interactive Reader
+##  Multi-Modal Interactive Reader
 
 The student reader (`StudentDashboard.jsx`) presents learning blocks calibrated to the student's CNV profile:
 * **UDL Presentation Modes:**
-  * 🎛️ **Multi-Modal:** Integrated view combining summary, audio narration, interactive diagrams, analogies, and key takeaways.
-  * 👁️ **Visual Only:** Minimal prose with expanded Mermaid diagrams, structural callouts, and visual infographics.
-  * 📄 **Deep Dive / Text:** Detailed textbook narrative, historical context, and deep conceptual notes.
-  * ✍️ **Practice / Checkpoints:** Concept quizzes with instant validation, gentle hints, and pedagogical explanations.
+  *  **Multi-Modal:** Integrated view combining summary, audio narration, interactive diagrams, analogies, and key takeaways.
+  *  **Visual Only:** Minimal prose with expanded Mermaid diagrams, structural callouts, and visual infographics.
+  *  **Deep Dive / Text:** Detailed textbook narrative, historical context, and deep conceptual notes.
+  *  **Practice / Checkpoints:** Concept quizzes with instant validation, gentle hints, and pedagogical explanations.
 * **Interactive Audio Synthesizer:** Multi-speed controller (`0.85x`, `1.0x`, `1.15x`) with progress bar and Chrome silence-interval bypass to prevent premature speech cancellation.
 * **Automatic Error Recovery:** Dynamic sanitization of Mermaid flowchart labels to prevent parsing errors caused by scientific nomenclature or parentheses.
 
 ---
 
-## 🧑‍🏫 Educator Ingestion & Verification Portal
+##  Educator Ingestion & Verification Portal
 
 The Educator Portal (`EducatorDashboard.jsx`) provides teachers with direct control:
 * **Curriculum PDF Ingestion:** Upload NCERT, CBSE, or custom state curriculum documents.
@@ -146,7 +146,7 @@ The Educator Portal (`EducatorDashboard.jsx`) provides teachers with direct cont
 
 ---
 
-## 🏗️ System Architecture
+##  System Architecture
 
 ```mermaid
 flowchart TD
@@ -189,7 +189,7 @@ flowchart TD
 
 ---
 
-## 💻 Tech Stack
+##  Tech Stack
 
 ### Frontend
 * **Core:** React 19, Vite 8, React Router v7
@@ -207,7 +207,7 @@ flowchart TD
 
 ---
 
-## 📂 Project Structure
+##  Project Structure
 
 ```
 LumynMinds/
@@ -258,7 +258,7 @@ LumynMinds/
 
 ---
 
-## ⚙️ Getting Started & Local Setup
+##  Getting Started & Local Setup
 
 ### Prerequisites
 1. **Node.js** v18.0.0 or higher ([Download Node.js](https://nodejs.org/))
@@ -329,7 +329,7 @@ npm run build
 
 ---
 
-## 🔑 Environment Variables
+##  Environment Variables
 
 | Variable | Description | Example Default |
 |---|---|---|
@@ -363,7 +363,7 @@ npm run build
 
 ---
 
-## 🎨 Sensory-Safe Visual Design System
+##  Sensory-Safe Visual Design System
 
 LumynMinds follows a neurodivergent-friendly visual language inspired by warm organic parchment tones:
 
@@ -376,13 +376,13 @@ LumynMinds follows a neurodivergent-friendly visual language inspired by warm or
 
 ---
 
-## 🤝 Contributing & Team
+##  Contributing & Team
 
-* **Krish Jaiswal** — Core Architecture & Infrastructure
-* **Shriyanshu Kumar Kapsime** — Cognitive Calibration Engine, Adaptation & Frontend UX
+* **Krish Jaiswal** — AI Module breakdown
+* **Shriyanshu Kumar Kapsime** — Core Architecture & Infrastructure, Cognitive Calibration Engine, Adaptation & Frontend UX
 
 ---
 
-## 📄 License
+##  License
 
 This project is licensed under the ISC License. See the `LICENSE` file for details.
